@@ -1,46 +1,43 @@
-import { ConfigManager } from './core/ConfigManager.js';
 import { SceneManager } from './core/SceneManager.js';
-import { ErrorBoundary } from './core/ErrorBoundary.js';
 import { MainController } from './core/MainController.js';
 import { I18N } from './config/i18n.js';
 
-// 1. 初始化核心管理器
-const urlParams = new URLSearchParams(window.location.search);
-const lang = urlParams.get('lang') || localStorage.getItem('beyond-lang') || 'zh';
-
-const config = new ConfigManager('kid', lang);
+// 1. 初始化場景管理器
 const sceneManager = new SceneManager('canvas-container');
-const errorBoundary = new ErrorBoundary(document.getElementById('hud'));
 
-// 2. 組裝主控制器並啟動
-const app = new MainController(config, sceneManager, errorBoundary);
+// 2. 初始化主控制器
+const app = new MainController(sceneManager);
 app.init();
 
 // 3. 雙語即時切換邏輯
-let currentLang = lang;
+let currentLang = 'zh';
 const langBtn = document.getElementById('lang-btn');
 
-function applyLanguage(l) {
-    currentLang = l;
-    localStorage.setItem('beyond-lang', l);
-    const dict = I18N[l];
+function updateLangUI(lang) {
+    currentLang = lang;
+    const dict = I18N[lang];
+    if (!dict) return;
 
-    document.querySelector('.hud-title').innerText = dict.title;
-    document.getElementById('mission-title').innerText = dict.missionHeader;
-    document.getElementById('view-hint').innerText = dict.viewHint;
-    document.getElementById('btn-grip').innerText = dict.gripBtn;
-    langBtn.innerText = dict.langBtn;
+    const titleEl = document.querySelector('.hud-title');
+    const missionTitleEl = document.getElementById('mission-title');
+    const viewHintEl = document.getElementById('view-hint');
+    const gripBtnEl = document.getElementById('btn-grip');
 
-    app.setLanguage(l);
+    if (titleEl) titleEl.innerText = dict.title;
+    if (missionTitleEl) missionTitleEl.innerText = dict.missionHeader;
+    if (viewHintEl) viewHintEl.innerText = dict.viewHint;
+    if (gripBtnEl) gripBtnEl.innerText = dict.gripBtn;
+    if (langBtn) langBtn.innerText = dict.langBtn;
+
+    app.setLanguage(lang);
 }
 
-langBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    applyLanguage(currentLang === 'zh' ? 'en' : 'zh');
-});
+if (langBtn) {
+    langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        updateLangUI(currentLang === 'zh' ? 'en' : 'zh');
+    });
+}
 
-applyLanguage(currentLang);
-
-// 導出全局除錯
+updateLangUI('zh');
 window.__app = app;
-window.__config = config;
