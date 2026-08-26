@@ -14,12 +14,11 @@ export class HUDManager {
         this.missionTitle = document.getElementById('mission-title');
         this.missionDesc = document.getElementById('mission-desc');
 
-        const currentLang = this.config?.getLang?.() || localStorage.getItem('beyond-lang') || 'zh';
+        const currentLang = localStorage.getItem('beyond-lang') || 'zh';
         this.updateLanguage(currentLang, mission);
 
-        if (this.config?.getLevel?.() && this.config.getLevel() !== 'kid') {
-            this._mountTelemetryPanel();
-        }
+        // 掛載科研/工業級遙測數據面板
+        this._mountTelemetryPanel();
     }
 
     _mountTelemetryPanel() {
@@ -39,10 +38,11 @@ export class HUDManager {
             color: #88ccdd;
             backdrop-filter: blur(6px);
             margin-top: 8px;
+            pointer-events: auto;
         `;
         this.dataPanel.innerHTML = `
-            <div style="display:flex; justify-content:space-between;"><span>EE Pos:</span><span id="tel-pos" style="color:#00e5ff;">0.0, 0.0, 0.0</span></div>
-            <div style="display:flex; justify-content:space-between;"><span>Tracking Err:</span><span id="tel-err" style="color:#00e5ff;">0.000m</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>EE POS:</span><span id="tel-pos" style="color:#00e5ff;">0.0, 0.0, 0.0</span></div>
+            <div style="display:flex; justify-content:space-between;"><span>TRACKING ERR:</span><span id="tel-err" style="color:#00e5ff;">0.000m</span></div>
         `;
         hud.insertBefore(this.dataPanel, hud.children[2] || null);
     }
@@ -65,7 +65,7 @@ export class HUDManager {
 
     updateStatus(statusKey) {
         if (!this.statusTag) return;
-        const currentLang = this.config?.getLang?.() || localStorage.getItem('beyond-lang') || 'zh';
+        const currentLang = localStorage.getItem('beyond-lang') || 'zh';
         const dict = I18N[currentLang] || I18N.zh;
         this.statusTag.innerText = dict[statusKey] || statusKey;
     }
