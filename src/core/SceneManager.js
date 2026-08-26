@@ -1,7 +1,3 @@
-/**
- * Three.js 場景管理器：負責建立、渲染、尺寸調整同資源釋放
- * 確保 Memory Leak 零發生
- */
 export class SceneManager {
     constructor(containerId) {
         this.container = document.getElementById(containerId);
@@ -40,19 +36,8 @@ export class SceneManager {
     dispose() {
         window.removeEventListener('resize', this._resizeHandler);
         this.renderer.dispose();
-        this.container.removeChild(this.renderer.domElement);
-        // 清理場景中所有物件
-        while (this.scene.children.length > 0) {
-            const child = this.scene.children[0];
-            if (child.geometry) child.geometry.dispose();
-            if (child.material) {
-                if (Array.isArray(child.material)) {
-                    child.material.forEach(m => m.dispose());
-                } else {
-                    child.material.dispose();
-                }
-            }
-            this.scene.remove(child);
+        if (this.container.contains(this.renderer.domElement)) {
+            this.container.removeChild(this.renderer.domElement);
         }
     }
 
