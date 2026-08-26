@@ -22,6 +22,8 @@ export class MainController {
         this.armData = null;
         this.mission = null;
         this.controls = null;
+        this.clawAnimProgress = 1.0;
+        this.coreAnimTime = 0;
     }
 
     init() {
@@ -31,9 +33,8 @@ export class MainController {
         this.controls.target.set(0, 0.6, 0.2);
         this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
-        this.armData = ArmBuilder.build(this.sceneMgr.scene);
+        this.armData = ArmBuilder.build(this.sceneMgr.scene, this.mode);
         
-        // 傳入 mode 與 scene 給 MissionManager
         this.mission = new MissionManager(
             this.armData.endEffector,
             this.armData.reactorSocket,
@@ -71,23 +72,51 @@ export class MainController {
 
         const dt = Math.min(this.clock.getDelta(), 0.05);
         const intensity = this.inputMapper.getIntensity();
+        this.coreAnimTime += dt;
 
         this.inputMapper.update(this.targetPos, dt, this.sceneMgr.camera);
         this.mission.update(dt, this.targetPos);
 
         CCDIKSolver.solve(this.armData.ikBones, this.armData.endEffector, this.targetPos, 4, 0.8);
 
-        // 物理伸縮大臂
+        // 1. 液壓活塞與套筒物理聯動
         if (this.armData.extensionRod && this.armData.joint2) {
             const currentDist = this.targetPos.length();
-            const extendRatio = Math.max(0.0, Math.min(0.5, (currentDist - 1.0) * 0.4));
+            const extendRatio = Math.max(0.0, Math.min(0.45, (currentDist - 1.0) * 0.4));
             this.armData.extensionRod.position.y = 0.65 + extendRatio;
-            this.armData.joint2.position.y = 0.9 + extendRatio;
+            this.armData.joint2.position.y = 1.05 + extendRatio;
+            
+            if (this.armData.pistonRod) {
+                this.armData.pistonRod.position.y = 0.78 + extendRatio * 0.6;
+            }
         }
 
-        const targetOffset = this.mission.clawOpen ? 0.08 : 0.01;
-        this.armData.clawLeft.position.x += (-0.07 - targetOffset - this.armData.clawLeft.position.x) * 0.3;
-        this.armData.clawRight.position.x += (0.07 + targetOffset - this.armData.clawRight.position.x) * 0.3;
+        // 2. 夾爪非線性 Ease In/Out 開合
+        const targetOpen = this.mission.clawOpen ? 1.0 : 0.0;
+        this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * (14.0 * dt);
+        const ease = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        const progress = ease(Math.max(0, Math.min(1, this.clawAnimProgress)));
+        const offset = progress * 0.08;
+        this.armData.clawLeft.position.x = -offset;
+        this.armData.clawRight.position.x = offset;
+
+        // 3. 🌟 雙層粒子立體正反自旋與呼吸光場
+        if (this.armData.coreParticlesInner) {
+            this.armData.coreParticlesInner.rotation.y += 2.2 * dt;
+        }
+        if (this.armData.coreParticlesOuter) {
+            this.armData.coreParticlesOuter.rotation.y -= 1.4 * dt;
+            this.armData.coreParticlesOuter.rotation.x += 0.8 * dt;
+        }
+        if (this.armData.coreGlowMesh) {
+            const pulse = 1.0 + Math.sin(this.coreAnimTime * 3.5) * 0.12;
+            this.armData.coreGlowMesh.scale.set(pulse, pulse, pulse);
+        }
+
+        // 4. LED 狀態指示燈
+        if (this.armData.statusLed) {
+            this.armData.statusLed.material.color.setHex(this.mission.isSecured ? 0x00ff66 : 0xff7700);
+        }
 
         this.audio.setMotorPitch(intensity);
         this.hud.update(this.targetPos, this.armData, this.mission, intensity);
