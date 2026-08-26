@@ -1,30 +1,62 @@
+import * as THREE from 'three';
 import { POOL } from '../core/Pool.js';
 
 export class CCDIKSolver {
-    static solve(ikBones, endEffector, target, iterations = 3, damping = 0.7) {
+    static solve(bones, endEffector, targetPosition, iterations = 4, damping = 0.8) {
+        if (!bones || bones.length === 0 || !endEffector || !targetPosition) return;
+
         for (let iter = 0; iter < iterations; iter++) {
-            for (let i = ikBones.length - 1; i >= 0; i--) {
-                const bone = ikBones[i];
-                bone.obj.getWorldPosition(POOL.v1);
-                endEffector.getWorldPosition(POOL.v2);
+            for (let i = bones.length - 1; i >= 0; i--) {
+                const bone = bones[i];
+                const boneObj = bone.obj;
 
-                POOL.toEnd.subVectors(POOL.v2, POOL.v1).normalize();
-                POOL.toTarget.subVectors(target, POOL.v1).normalize();
+                // 1. 取得末端效應器、目標與當前關節的世界坐標
+                endEffector.getWorldPosition(POOL.v1);
+                const targetPos = targetPosition;
+                boneObj.getWorldPosition(POOL.v2);
 
-                let angle = POOL.toEnd.dot(POOL.toTarget);
-                angle = Math.acos(Math.max(-1, Math.min(1, angle)));
+                // 2. 計算從當前關節指向「末端」與「目標」的方向向量
+                POOL.v3.subVectors(POOL.v1, POOL.v2).normalize(); // 關節 -> 末端
+                POOL.forward.subVectors(targetPos, POOL.v2).normalize(); // 關節 -> 目標
 
-                if (angle > 0.001) {
-                    POOL.cross.crossVectors(POOL.toEnd, POOL.toTarget).normalize();
-                    const currentRot = (bone.axis === 'Y') ? bone.obj.rotation.y : bone.obj.rotation.x;
-                    let targetDelta = (bone.axis === 'Y' ? POOL.cross.y : POOL.cross.x) * angle * damping;
-                    targetDelta = Math.max(-0.12, Math.min(0.12, targetDelta));
-                    const nextRot = Math.max(bone.min, Math.min(bone.max, currentRot + targetDelta));
+                if (bone.axis === 'Y') {
+                    // 基座迴轉 (Yaw 軸)
+                    const curAngle = Math.atan2(POOL.v3.x, POOL.v3.z);
+                    const targetAngle = Math.atan2(POOL.forward.x, POOL.forward.z);
+                    let delta = targetAngle - curAngle;
 
-                    if (bone.axis === 'Y') bone.obj.rotation.y = nextRot;
-                    else bone.obj.rotation.x = nextRot;
-                    bone.obj.updateMatrixWorld(true);
+                    // 正規化角度差至 [-PI, PI]
+                    while (delta > Math.PI) delta -= Math.PI * 2;
+                    while (delta < -Math.PI) delta += Math.PI * 2;
+
+                    boneObj.rotation.y += delta * damping;
+
+                    if (bone.min !== undefined && bone.max !== undefined) {
+                        boneObj.rotation.y = Math.max(bone.min, Math.min(bone.max, boneObj.rotation.y));
+                    }
+                } else if (bone.axis === 'X') {
+                    // 關節俯仰 (Pitch 軸)
+                    // 將世界坐標向量轉換至當前關節父節點的局部空間
+                    const invMatrix = POOL.m1.copy(boneObj.parent ? boneObj.parent.matrixWorld : boneObj.matrixWorld).invert();
+                    
+                    const localEnd = POOL.v3.transformDirection(invMatrix);
+                    const localTarget = POOL.forward.transformDirection(invMatrix);
+
+                    const curAngle = Math.atan2(localEnd.y, localEnd.z);
+                    const targetAngle = Math.atan2(localTarget.y, localTarget.z);
+                    let delta = targetAngle - curAngle;
+
+                    while (delta > Math.PI) delta -= Math.PI * 2;
+                    while (delta < -Math.PI) delta += Math.PI * 2;
+
+                    boneObj.rotation.x += delta * damping;
+
+                    if (bone.min !== undefined && bone.max !== undefined) {
+                        boneObj.rotation.x = Math.max(bone.min, Math.min(bone.max, boneObj.rotation.x));
+                    }
                 }
+
+                boneObj.updateMatrixWorld(true);
             }
         }
     }
