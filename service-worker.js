@@ -1,4 +1,4 @@
-const CACHE_NAME = 'beyond-the-hand-v3';
+const CACHE_NAME = 'beyond-the-hand-v4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
@@ -17,6 +17,7 @@ const ASSETS_TO_CACHE = [
   './src/controls/JoystickManager.js',
   './src/gameplay/MissionManager.js',
   './src/render/HUDManager.js',
+  './src/render/ImpactFXManager.js',
   'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
 ];
 
