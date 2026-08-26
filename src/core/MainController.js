@@ -35,16 +35,16 @@ export class MainController {
         this.controls.maxPolarAngle = Math.PI / 2 - 0.02;
 
         this.armData = ArmBuilder.build(this.sceneMgr.scene, this.mode);
-        
+        this.hud.init(this.mode);
+
         this.mission = new MissionManager(
             this.armData.endEffector,
             this.armData.reactorSocket,
             this.audio,
             this.sceneMgr.scene,
-            this.mode
+            this.mode,
+            this.hud
         );
-
-        this.hud.init(this.mode);
 
         JoystickManager.init(
             (x, y) => {
@@ -62,6 +62,41 @@ export class MainController {
         this.animate();
     }
 
+    _getJointAngles() {
+        if (!this.armData?.ikBones) return [0, 0, 0, 0];
+        return this.armData.ikBones.map(b => {
+            if (b.axis === 'Y') return b.obj.rotation.y;
+            return b.obj.rotation.x;
+        });
+    }
+
+    // 🌟 靜態/動態牛頓-歐拉力矩估算 (Joint Torque Estimation)
+    _estimateJointTorques(angles, isSecured) {
+        const payloadMass = isSecured ? 2.5 : 0.0; // 抓取時附加 2.5kg 負載
+        const g = 9.81;
+
+        // 連桿質量與臂長參數
+        const m1 = 1.8, L1 = 1.1; // 大臂
+        const m2 = 1.2, L2 = 0.8; // 前臂
+        const m3 = 0.6;          // 腕部
+
+        const theta1 = angles[1] || 0; // 肩關節俯仰
+        const theta2 = angles[2] || 0; // 肘關節俯仰
+
+        // 計算力臂
+        const r1 = (L1 / 2) * Math.sin(theta1);
+        const r2 = L1 * Math.sin(theta1) + (L2 / 2) * Math.sin(theta1 + theta2);
+        const rEnd = L1 * Math.sin(theta1) + L2 * Math.sin(theta1 + theta2);
+
+        // 各關節靜態重力力矩 (N·m)
+        const tau0 = 0.8; // 基座迴轉阻尼
+        const tau2 = Math.abs((m2 * g * (L2 / 2) + (m3 + payloadMass) * g * L2) * Math.sin(theta1 + theta2));
+        const tau1 = Math.abs(m1 * g * r1 + m2 * g * r2 + (m3 + payloadMass) * g * rEnd);
+        const tau3 = Math.abs((m3 + payloadMass) * g * 0.15);
+
+        return [tau0, tau1, tau2, tau3];
+    }
+
     setLanguage(lang) {
         if (this.mission) this.mission.setLanguage(lang);
         if (this.hud) this.hud.setLanguage(lang);
@@ -76,8 +111,6 @@ export class MainController {
         this.coreAnimTime += dt;
 
         this.inputMapper.update(this.targetPos, dt, this.sceneMgr.camera);
-        
-        // 🌟 將 intensity 傳入 MissionManager (用於科研模式穩定度檢測)
         this.mission.update(dt, this.targetPos, intensity);
 
         CCDIKSolver.solve(this.armData.ikBones, this.armData.endEffector, this.targetPos, 4, 0.8);
@@ -88,13 +121,13 @@ export class MainController {
             const extendRatio = Math.max(0.0, Math.min(0.45, (currentDist - 1.0) * 0.4));
             this.armData.extensionRod.position.y = 0.65 + extendRatio;
             this.armData.joint2.position.y = 1.05 + extendRatio;
-            
+
             if (this.armData.pistonRod) {
                 this.armData.pistonRod.position.y = 0.78 + extendRatio * 0.6;
             }
         }
 
-        // 夾爪非線性 Ease In/Out 開合
+        // 夾爪非線性開合
         const targetOpen = this.mission.clawOpen ? 1.0 : 0.0;
         this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * (14.0 * dt);
         const ease = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -103,13 +136,19 @@ export class MainController {
         this.armData.clawLeft.position.x = -offset;
         this.armData.clawRight.position.x = offset;
 
-        // LED 狀態指示燈
+        // LED 狀態燈
         if (this.armData.statusLed) {
             this.armData.statusLed.material.color.setHex(this.mission.isSecured ? 0x00ff66 : 0xff7700);
         }
 
         this.audio.setMotorPitch(intensity);
-        this.hud.update(this.targetPos, this.armData, this.mission, intensity);
+
+        // 提取關節角並估算力矩
+        const jointAngles = this._getJointAngles();
+        const torques = this._estimateJointTorques(jointAngles, this.mission.isSecured);
+
+        // 實時推播科研級遙測
+        this.hud.update(this.targetPos, this.armData, this.mission, intensity, jointAngles, torques);
 
         if (this.controls) this.controls.update();
         this.sceneMgr.render();
