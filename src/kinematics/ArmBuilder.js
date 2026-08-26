@@ -1,15 +1,13 @@
 export class ArmBuilder {
     static build(scene) {
-        // 基礎燈光
+        // 燈光
         scene.add(new THREE.AmbientLight(0x406080, 0.9));
         const dir = new THREE.DirectionalLight(0xffffff, 1.3);
         dir.position.set(4, 8, 4);
         scene.add(dir);
 
-        // 1. 全息藍圖投影地台 (Environmental Storytelling)
-        const grid = new THREE.GridHelper(14, 28, 0x00e5ff, 0x112233);
-        scene.add(grid);
-
+        // 全息地台與藍圖框線
+        scene.add(new THREE.GridHelper(14, 28, 0x00e5ff, 0x112233));
         const table = new THREE.Mesh(
             new THREE.CylinderGeometry(2.4, 2.5, 0.2, 32),
             new THREE.MeshStandardMaterial({ color: 0x121720, roughness: 0.3, metalness: 0.8 })
@@ -17,24 +15,15 @@ export class ArmBuilder {
         table.position.y = 0.1;
         scene.add(table);
 
-        // 工作台周圍散落的固定螺栓與裝配標記 (Zero-Asset)
-        const boltGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.05, 8);
-        const boltMat = new THREE.MeshStandardMaterial({ color: 0x8899aa, metalness: 0.9 });
-        for (let i = 0; i < 6; i++) {
-            const angle = (i / 6) * Math.PI * 2;
-            const bolt = new THREE.Mesh(boltGeo, boltMat);
-            bolt.position.set(Math.cos(angle) * 2.1, 0.22, Math.sin(angle) * 2.1);
-            scene.add(bolt);
-        }
-
-        // 全息投影裝配框線
         const wireGeo = new THREE.WireframeGeometry(new THREE.BoxGeometry(0.5, 0.5, 0.5));
-        const wireMat = new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.25 });
-        const blueprintBox = new THREE.LineSegments(wireGeo, wireMat);
+        const blueprintBox = new THREE.LineSegments(
+            wireGeo,
+            new THREE.LineBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.25 })
+        );
         blueprintBox.position.set(0.75, 0.5, 0.75);
         scene.add(blueprintBox);
 
-        // 2. 構建機械臂機體
+        // 材質
         const matGold = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.25 });
         const matRed = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.75, roughness: 0.3 });
         const matJoint = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.4 });
@@ -42,6 +31,7 @@ export class ArmBuilder {
 
         const ikBones = [];
 
+        // 基座
         const baseGroup = new THREE.Group();
         baseGroup.position.set(0, 0.2, 0);
         scene.add(baseGroup);
@@ -50,14 +40,14 @@ export class ArmBuilder {
         baseMesh.position.y = 0.15;
         baseGroup.add(baseMesh);
 
-        // Joint 0 (Base Yaw)
+        // Joint 0: Base Yaw
         const joint0 = new THREE.Group();
         joint0.position.set(0, 0.3, 0);
         baseGroup.add(joint0);
         ikBones.push({ obj: joint0, axis: 'Y', min: -Math.PI, max: Math.PI });
         joint0.add(new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 16), matJoint));
 
-        // Joint 1 (Shoulder Pitch)
+        // Joint 1: Shoulder Pitch
         const joint1 = new THREE.Group();
         joint0.add(joint1);
         ikBones.push({ obj: joint1, axis: 'X', min: -Math.PI * 0.45, max: Math.PI * 0.45 });
@@ -66,7 +56,7 @@ export class ArmBuilder {
         upperArm.position.set(0, 0.6, 0);
         joint1.add(upperArm);
 
-        // Joint 2 (Elbow Pitch)
+        // Joint 2: Elbow Pitch
         joint1.add(new THREE.Mesh(new THREE.SphereGeometry(0.2, 16, 16), matJoint));
         const joint2 = new THREE.Group();
         joint2.position.set(0, 1.2, 0);
@@ -77,7 +67,7 @@ export class ArmBuilder {
         foreArm.position.set(0, 0.5, 0);
         joint2.add(foreArm);
 
-        // Joint 3 (Wrist Pitch)
+        // Joint 3: Wrist Pitch
         const wristMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.14, 16), matJoint);
         wristMesh.position.set(0, 1.0, 0);
         joint2.add(wristMesh);
@@ -109,7 +99,7 @@ export class ArmBuilder {
         endEffector.position.set(0, 0.32, 0);
         joint3.add(endEffector);
 
-        // 3. 方舟反應爐與目標槽位
+        // 量子核心與基座槽位
         const reactorSocket = new THREE.Mesh(
             new THREE.CylinderGeometry(0.28, 0.3, 0.1, 24),
             new THREE.MeshStandardMaterial({ color: 0x334455, metalness: 0.9 })
