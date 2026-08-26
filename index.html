@@ -6,6 +6,16 @@
     <title>J.A.R. 在手之上 3D ｜ Beyond the Hand</title>
     <link rel="stylesheet" href="css/style.css">
     
+    <!-- 🌟 加入 Import Map 解決瀏覽器解析 "three" 模組路徑問題 -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+      }
+    }
+    </script>
+
+    <!-- 全域支援腳本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
     
@@ -18,7 +28,7 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 </head>
 <body>
-    <!-- 🌟 彈出式模式切換選單 (預設隱藏，點擊按鈕才彈出) -->
+    <!-- 彈出式模式切換選單 -->
     <div id="mode-selector" style="display:none; position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.88); backdrop-filter:blur(15px); flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.3s;">
         <h2 style="color:#00e5ff; font-size:24px; letter-spacing:3px; font-weight:800; margin-bottom: 5px;">⚡ 切換任務模式</h2>
         <p style="color:#8899aa; margin-bottom:25px; font-size:13px;">請選擇即將載入的自動化領域</p>
@@ -81,7 +91,6 @@
         <div class="hud-header">
             <div class="hud-title">⚡ J.A.R. 在手之上 3D</div>
             <div class="header-controls">
-                <!-- 🌟 頂部即時切換模式按鈕 -->
                 <button id="btn-switch-mode" class="lang-btn" style="background:rgba(0,229,255,0.15); color:#00e5ff; border-color:#00e5ff; font-weight:bold;">🔀 切換模式</button>
                 <button id="lang-btn" class="lang-btn">🌐 EN / 中文</button>
                 <div id="status-tag" class="hud-status">系統就緒</div>
