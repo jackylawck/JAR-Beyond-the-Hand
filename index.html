@@ -2,11 +2,72 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J.A.R. 在手之上 3D ｜ Beyond the Hand</title>
-    <link rel="stylesheet" href="css/style.css">
-    
-    <!-- 🌟 加入 Import Map 解決瀏覽器解析 "three" 模組路徑問題 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#020810">
+
+    <!-- 🔍 Google 網站驗證 (替換為你的驗證碼) -->
+    <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY" />
+
+    <!-- 🌐 雙語全球 SEO 標籤 -->
+    <title>J.A.R. 在手之上 3D | Beyond the Hand 3D</title>
+    <meta name="description" content="J.A.R. Beyond the Hand 3D is an open-source, zero-asset 6-DoF robotic arm simulator featuring real-time CCD-IK, dynamic telemetry, and modal frequency FFT analysis. J.A.R. 聯合應用科學探索：高精度工業與科研機械臂 3D 模擬器。">
+    <meta name="keywords" content="J.A.R., Joint Applied Research, 聯合應用科學探索, Beyond the Hand, Robotic Arm Simulator, Three.js, WebGL, CCD-IK, 6-DoF, Telemetry, FFT, 機械臂模擬器, 逆向運動學, 機器人學, 智能組裝, 工業自動化, 在手之上">
+    <meta name="author" content="Jacky Law">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
+
+    <!-- 📱 Open Graph 社群分享卡片 -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
+    <meta property="og:title" content="J.A.R. 在手之上 3D | Beyond the Hand 3D">
+    <meta property="og:description" content="高保真 WebGL 6-DoF 工業與科研機械臂沙盒，支援實時 IK 逆向運動學求解與科研遙測數據採集。">
+    <meta property="og:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
+
+    <!-- 🐦 Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
+    <meta name="twitter:title" content="J.A.R. Beyond the Hand 3D | Joint Applied Research">
+    <meta name="twitter:description" content="High-fidelity 3D WebGL robotic arm simulator with real-time CCD-IK and dynamic FFT telemetry.">
+    <meta name="twitter:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
+
+    <!-- 🔍 Google 結構化資料 (Schema.org JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "J.A.R. Beyond the Hand 3D",
+      "alternateName": "J.A.R. 在手之上 3D (Beyond the Hand 3D)",
+      "url": "https://jackylawck.github.io/JAR-Beyond-the-Hand/",
+      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator featuring real-time CCD-IK, FFT vibration telemetry, and 3-tier career scenarios.",
+      "applicationCategory": "EducationalApplication, SimulationApplication",
+      "operatingSystem": "All",
+      "browserRequirements": "Requires JavaScript. Requires WebGL / HTML5.",
+      "inLanguage": ["en", "zh-HK", "zh-TW"],
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "author": {
+        "@type": "Person",
+        "name": "Jacky Law"
+      }
+    }
+    </script>
+
+    <!-- 🛡️ CSP 安全防護 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data: blob:;">
+
+    <!-- 📲 PWA 與圖示連結 -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" sizes="192x192" href="jarBeyondtheHand192icon.png">
+    <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
+    <link rel="apple-touch-icon" href="jarBeyondtheHand192icon.png">
+
+    <!-- 🌟 Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -15,11 +76,8 @@
     }
     </script>
 
-    <!-- 全域支援腳本 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    
-    <!-- PostProcessing 泛光支援 -->
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
@@ -28,6 +86,21 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 </head>
 <body>
+    <!-- 📲 手機「加至主畫面」一鍵提示橫幅 -->
+    <div id="pwa-install-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); width:90%; max-width:380px; background:rgba(4,14,28,0.92); border:1px solid #00e5ff; border-radius:10px; padding:10px 16px; z-index:200; box-shadow:0 4px 25px rgba(0,229,255,0.25); backdrop-filter:blur(10px); align-items:center; justify-content:space-between;">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img src="jarBeyondtheHand192icon.png" style="width:36px; height:36px; border-radius:6px; border:1px solid rgba(0,229,255,0.4);" alt="App Icon">
+            <div>
+                <div style="color:#fff; font-size:12px; font-weight:bold;">安裝 J.A.R. 機械臂 App</div>
+                <div style="color:#8899aa; font-size:10px;">加入手機主畫面，全螢幕沉浸體驗</div>
+            </div>
+        </div>
+        <div style="display:flex; gap:6px;">
+            <button id="btn-pwa-install" style="background:#00e5ff; border:none; color:#030712; font-size:11px; font-weight:bold; padding:6px 12px; border-radius:5px; cursor:pointer;">安裝</button>
+            <button id="btn-pwa-close" style="background:transparent; border:none; color:#8899aa; font-size:14px; cursor:pointer;">✕</button>
+        </div>
+    </div>
+
     <!-- 彈出式模式切換選單 -->
     <div id="mode-selector" style="display:none; position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.88); backdrop-filter:blur(15px); flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.3s;">
         <h2 style="color:#00e5ff; font-size:24px; letter-spacing:3px; font-weight:800; margin-bottom: 5px;">⚡ 切換任務模式</h2>
@@ -109,6 +182,37 @@
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
+
+    <!-- PWA 安裝監聽腳本 -->
+    <script>
+        let deferredPrompt;
+        const banner = document.getElementById('pwa-install-banner');
+        const installBtn = document.getElementById('btn-pwa-install');
+        const closeBtn = document.getElementById('btn-pwa-close');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            if (banner) banner.style.display = 'flex';
+        });
+
+        if (installBtn) {
+            installBtn.addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    deferredPrompt = null;
+                    if (banner) banner.style.display = 'none';
+                }
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                if (banner) banner.style.display = 'none';
+            });
+        }
+    </script>
 
     <script type="module" src="src/main.js"></script>
 </body>
