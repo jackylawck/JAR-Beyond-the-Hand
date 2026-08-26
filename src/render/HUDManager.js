@@ -1,29 +1,30 @@
+import { I18N } from '../config/i18n.js';
+
 export class HUDManager {
     constructor() {
         this.dom = {};
         this.mode = 'kid';
         this.lang = 'zh';
-        this.isCollapsed = false; // 折疊狀態
+        this.isCollapsed = false;
         this.isRecording = false;
         this.recordedData = [];
 
-        // 64 點滑動窗口 FFT
         this.fftWindowSize = 64;
         this.fftBuffer = new Float32Array(this.fftWindowSize);
         this.fftIndex = 0;
-        this.primaryFreq = 0;
+        this.primaryFreq = "0.0";
     }
 
     init(mode = 'kid') {
         this.mode = mode;
         this._buildHUDDOM();
         this._bindEvents();
+        this.setLanguage(this.lang);
     }
 
     _buildHUDDOM() {
-        // 檢查並移除舊的 HUD 容器
-        let container = document.getElementById('telemetry-panel');
-        if (container) container.remove();
+        const oldPanel = document.getElementById('telemetry-panel');
+        if (oldPanel) oldPanel.remove();
 
         const panel = document.createElement('div');
         panel.id = 'telemetry-panel';
@@ -31,12 +32,12 @@ export class HUDManager {
         panel.innerHTML = `
             <div class="panel-header" id="panel-toggle-btn">
                 <div class="header-left">
-                    <span class="mode-icon" id="hud-mode-icon">🌱</span>
-                    <span class="mode-title" id="hud-mode-title">農業採摘 ｜ 力學遙測</span>
+                    <span id="hud-mode-icon">🌱</span>
+                    <span id="hud-mode-title">農業採摘 ｜ 力學遙測</span>
                 </div>
                 <div class="header-right">
                     <span class="fps-tag" id="hud-fps">60 FPS</span>
-                    <button class="toggle-collapse-btn" id="btn-collapse" title="折疊/展開面板">◀</button>
+                    <button class="toggle-collapse-btn" id="btn-collapse" title="折疊/展開">◀</button>
                 </div>
             </div>
             
@@ -45,52 +46,59 @@ export class HUDManager {
                     <div class="grid-cell"><span class="label">X:</span> <span class="val" id="val-x">0.00</span><span class="unit">m</span></div>
                     <div class="grid-cell"><span class="label">Y:</span> <span class="val" id="val-y">0.00</span><span class="unit">m</span></div>
                     <div class="grid-cell"><span class="label">Z:</span> <span class="val" id="val-z">0.00</span><span class="unit">m</span></div>
-                    <div class="grid-cell"><span class="label">半徑:</span> <span class="val highlight" id="val-r">0.00</span><span class="unit">m</span></div>
+                    <div class="grid-cell"><span class="label" id="lbl-radius">工作半徑:</span> <span class="val highlight" id="val-r">0.00</span><span class="unit">m</span></div>
                 </div>
 
                 <div class="telemetry-metrics">
                     <div class="metric-row">
-                        <span class="label">誤差 CI95%:</span>
+                        <span class="label" id="lbl-error">誤差 CI95%:</span>
                         <span class="val error-val" id="val-error">0.000±0.00</span>
                     </div>
                     <div class="metric-row">
-                        <span class="label">末端負載:</span>
+                        <span class="label" id="lbl-payload">末端負載:</span>
                         <span class="val" id="val-payload">0.0 <span class="unit">N</span></span>
                     </div>
                     <div class="metric-row">
-                        <span class="label">伺服功率:</span>
+                        <span class="label" id="lbl-power">伺服功耗:</span>
                         <span class="val power-val" id="val-power">0 <span class="unit">mW</span></span>
                     </div>
                     <div class="metric-row">
-                        <span class="label">主模態頻率:</span>
+                        <span class="label" id="lbl-freq">主模態頻率:</span>
                         <span class="val" id="val-fft">0.0 <span class="unit">Hz</span></span>
                     </div>
                 </div>
 
                 <div class="panel-actions">
                     <button id="btn-record" class="action-btn record-btn">
-                        <span class="btn-dot"></span><span id="txt-record">啟動記錄</span>
+                        <span class="btn-dot"></span><span id="txt-record">啟動數據記錄</span>
                     </button>
                     <button id="btn-export-csv" class="action-btn csv-btn">
                         <span>💾</span><span id="txt-export">導出 CSV</span>
                     </button>
                 </div>
+
+                <div class="telemetry-footer" id="txt-status-bar">⏳ 系統就緒 · 遙測傳輸正常</div>
             </div>
         `;
 
         document.body.appendChild(panel);
 
-        // 快取 DOM 節點
         this.dom = {
             panel: panel,
-            content: document.getElementById('panel-expandable-content'),
             toggleBtn: document.getElementById('panel-toggle-btn'),
             collapseBtn: document.getElementById('btn-collapse'),
+            modeIcon: document.getElementById('hud-mode-icon'),
+            modeTitle: document.getElementById('hud-mode-title'),
             fps: document.getElementById('hud-fps'),
             x: document.getElementById('val-x'),
             y: document.getElementById('val-y'),
             z: document.getElementById('val-z'),
             r: document.getElementById('val-r'),
+            lblRadius: document.getElementById('lbl-radius'),
+            lblError: document.getElementById('lbl-error'),
+            lblPayload: document.getElementById('lbl-payload'),
+            lblPower: document.getElementById('lbl-power'),
+            lblFreq: document.getElementById('lbl-freq'),
             error: document.getElementById('val-error'),
             payload: document.getElementById('val-payload'),
             power: document.getElementById('val-power'),
@@ -98,38 +106,44 @@ export class HUDManager {
             btnRecord: document.getElementById('btn-record'),
             btnExport: document.getElementById('btn-export-csv'),
             txtRecord: document.getElementById('txt-record'),
-            txtExport: document.getElementById('txt-export')
+            txtExport: document.getElementById('txt-export'),
+            statusBar: document.getElementById('txt-status-bar'),
+            
+            // 頂部導航與外部 HUD
+            appTitle: document.querySelector('.hud-title'),
+            btnSwitchMode: document.getElementById('btn-switch-mode'),
+            btnLang: document.getElementById('lang-btn'),
+            statusTag: document.getElementById('status-tag'),
+            missionTitle: document.getElementById('mission-title'),
+            missionDesc: document.getElementById('mission-desc'),
+            viewHint: document.getElementById('view-hint'),
+            jarTitleSpan: document.querySelector('#jar-title span:first-child'),
+            jarStatusSpan: document.querySelector('#jar-title span:last-child'),
+            jarText: document.getElementById('jar-text')
         };
     }
 
     _bindEvents() {
         if (!this.dom.panel) return;
 
-        // 點擊頂部標題或按鈕折疊/展開
         const toggle = (e) => {
             e.stopPropagation();
             this.isCollapsed = !this.isCollapsed;
-            if (this.isCollapsed) {
-                this.dom.panel.classList.add('collapsed');
-                this.dom.collapseBtn.innerText = '▼';
-            } else {
-                this.dom.panel.classList.remove('collapsed');
-                this.dom.collapseBtn.innerText = '◀';
-            }
+            this.dom.panel.classList.toggle('collapsed', this.isCollapsed);
+            this.dom.collapseBtn.innerText = this.isCollapsed ? '▼' : '◀';
         };
 
         this.dom.toggleBtn.addEventListener('click', toggle);
         this.dom.collapseBtn.addEventListener('click', toggle);
 
-        // 記錄與導出
         this.dom.btnRecord.addEventListener('click', (e) => {
             e.stopPropagation();
             this.isRecording = !this.isRecording;
             this.dom.btnRecord.classList.toggle('active', this.isRecording);
-            this.dom.txtRecord.innerText = this.isRecording ? (this.lang === 'en' ? 'Stop Rec' : '停止記錄') : (this.lang === 'en' ? 'Start Rec' : '啟動記錄');
-            if (this.isRecording) {
-                this.recordedData = [];
-            }
+            const t = I18N[this.lang];
+            this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
+            this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
+            if (this.isRecording) this.recordedData = [];
         });
 
         this.dom.btnExport.addEventListener('click', (e) => {
@@ -140,27 +154,61 @@ export class HUDManager {
 
     setLanguage(lang) {
         this.lang = lang;
-        if (this.dom.txtRecord) {
-            this.dom.txtRecord.innerText = this.isRecording ? (lang === 'en' ? 'Stop Rec' : '停止記錄') : (lang === 'en' ? 'Start Rec' : '啟動記錄');
-            this.dom.txtExport.innerText = lang === 'en' ? 'Export CSV' : '導出 CSV';
+        const t = I18N[lang];
+        if (!t || !this.dom.modeTitle) return;
+
+        // 頂部導航與標題
+        if (this.dom.appTitle) this.dom.appTitle.innerText = t.appTitle;
+        if (this.dom.btnSwitchMode) this.dom.btnSwitchMode.innerText = t.switchMode;
+        if (this.dom.btnLang) this.dom.btnLang.innerText = t.langBtn;
+        if (this.dom.statusTag) this.dom.statusTag.innerText = t.statusReady;
+        if (this.dom.viewHint) this.dom.viewHint.innerText = t.viewHint;
+
+        // 模式標題
+        if (this.mode === 'kid') {
+            this.dom.modeIcon.innerText = '🌱';
+            this.dom.modeTitle.innerText = t.kidTitle;
+            if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionKid} (1/3)`;
+            if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionKidDesc;
+        } else if (this.mode === 'advanced') {
+            this.dom.modeIcon.innerText = '📱';
+            this.dom.modeTitle.innerText = t.advTitle;
+            if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionAdv} (1/3)`;
+            if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionAdvDesc;
+        } else {
+            this.dom.modeIcon.innerText = '🧪';
+            this.dom.modeTitle.innerText = t.resTitle;
+            if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionRes} (1/3)`;
+            if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionResDesc;
         }
+
+        // 遙測標籤翻譯
+        this.dom.lblRadius.innerText = `${t.labelRadius}:`;
+        this.dom.lblError.innerText = `${t.labelError}:`;
+        this.dom.lblPayload.innerText = `${t.labelPayload}:`;
+        this.dom.lblPower.innerText = `${t.labelPower}:`;
+        this.dom.lblFreq.innerText = `${t.labelFreq}:`;
+        this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
+        this.dom.txtExport.innerText = t.btnExportCsv;
+        this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
+
+        // J.A.R. 助理標題與狀態
+        if (this.dom.jarTitleSpan) this.dom.jarTitleSpan.innerText = t.jarTitle;
+        if (this.dom.jarStatusSpan) this.dom.jarStatusSpan.innerText = t.jarStatus;
     }
 
     update(targetPos, armData, mission, intensity, jointAngles, torques) {
         if (!this.dom.x) return;
 
-        // 更新座標
         this.dom.x.innerText = targetPos.x.toFixed(2);
         this.dom.y.innerText = targetPos.y.toFixed(2);
         this.dom.z.innerText = targetPos.z.toFixed(2);
         this.dom.r.innerText = Math.hypot(targetPos.x, targetPos.z).toFixed(2);
 
-        // 誤差計算與 CI95%
         const err = mission?.currentDistance || 0;
         const ci = (err * 0.05).toFixed(3);
         this.dom.error.innerText = `${err.toFixed(3)}±${ci}`;
 
-        // 負載與功耗
         const payload = mission?.isSecured ? 2.5 : 0.0;
         this.dom.payload.innerText = `${payload.toFixed(1)} N`;
 
@@ -168,7 +216,6 @@ export class HUDManager {
         const powerMW = Math.round((totalTorque * intensity * 18) + (mission?.isSecured ? 15 : 4));
         this.dom.power.innerText = `${powerMW} mW`;
 
-        // FFT 頻率計算
         this.fftBuffer[this.fftIndex] = powerMW;
         this.fftIndex = (this.fftIndex + 1) % this.fftWindowSize;
         if (this.fftIndex === 0) {
@@ -176,7 +223,6 @@ export class HUDManager {
             this.dom.fft.innerText = `${this.primaryFreq} Hz`;
         }
 
-        // 記錄數據
         if (this.isRecording) {
             this.recordedData.push({
                 time: performance.now().toFixed(1),
