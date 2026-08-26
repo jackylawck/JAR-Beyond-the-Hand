@@ -7,6 +7,7 @@ import { JoystickManager } from '../controls/JoystickManager.js';
 import { MissionManager } from '../gameplay/MissionManager.js';
 import { HUDManager } from '../render/HUDManager.js';
 import { ImpactFXManager } from '../render/ImpactFXManager.js';
+import { AtmosphereFX } from '../render/AtmosphereFX.js';
 import { ModelDropZone } from '../ugc/ModelDropZone.js';
 
 export class MainController {
@@ -20,37 +21,40 @@ export class MainController {
 
         // Zero-Allocation 目標位置 (IK Target)
         this.targetPos = new THREE.Vector3(0, 1.8, 1.6);
+        this.idleTime = 0;
 
         // 注入基礎子系統
         this.audio = new AudioEngine();
         this.inputMapper = new InputMapper(config);
         this.hud = new HUDManager(config);
         this.fx = new ImpactFXManager(this.scene.scene, this.scene.camera);
+        this.atmosphere = new AtmosphereFX(this.scene.scene);
 
         // 核心組件實例
         this.armData = null;
         this.mission = null;
         this.dropZone = null;
-        this.controls = null; // 360° 視角控制器
+        this.controls = null;
+        this.currentCustomMesh = null; // 追蹤自訂裝配模型以防洩漏
     }
 
     init() {
         try {
-            // 1. 初始化 360° 軌道控制器 (支援多角度滑動觀察)
+            // 1. 初始化 360° 軌道控制器 (並限制觸控穿透)
             if (typeof THREE.OrbitControls !== 'undefined') {
                 this.controls = new THREE.OrbitControls(this.scene.camera, this.scene.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.08;
                 this.controls.target.set(0, 1.0, 0.5);
-                this.controls.maxPolarAngle = Math.PI / 2 + 0.05; // 避免穿透地台底部
+                this.controls.maxPolarAngle = Math.PI / 2 + 0.05;
                 this.controls.minDistance = 2.0;
                 this.controls.maxDistance = 10.0;
             }
 
-            // 2. 構建機械臂與場景
+            // 2. 構建機械臂與場景幾何
             this.armData = ArmBuilder.build(this.scene.scene);
 
-            // 3. 任務管理器 (注入音效、特效、輸入映射及點光源)
+            // 3. 任務管理器
             this.mission = new MissionManager(
                 this.armData.endEffector,
                 this.armData.reactorCore,
@@ -65,10 +69,16 @@ export class MainController {
             // 4. HUD 初始化
             this.hud.init(this.mission, this.armData);
 
-            // 5. 綁定雙搖桿與夾爪控制
+            // 5. 綁定雙搖桿與夾爪控制 (解決觸控衝突)
             JoystickManager.init(
-                (x, y) => this.inputMapper.setTranslation(x, y),
-                (x, y) => this.inputMapper.setRotation(x, y),
+                (x, y) => {
+                    this.inputMapper.setTranslation(x, y);
+                    if (this.controls) this.controls.enabled = (Math.hypot(x, y) === 0);
+                },
+                (x, y) => {
+                    this.inputMapper.setRotation(x, y);
+                    if (this.controls) this.controls.enabled = (Math.hypot(x, y) === 0);
+                },
                 () => this.mission.toggleGrip()
             );
 
@@ -106,25 +116,35 @@ export class MainController {
         if (!this.isRunning) return;
         this.rafId = requestAnimationFrame(() => this.animate());
 
-        // 取得時間步長並支援 Hit Stop / 慢動作時間縮放 (Time Scale)
         const rawDt = Math.min(this.clock.getDelta(), 0.05);
         const timeScale = this.mission ? this.mission.timeScale : 1.0;
         const dt = rawDt * timeScale;
         const camera = this.scene.camera;
+        this.idleTime += dt;
 
-        // 1. 核心呼吸發光動畫
+        // 1. 機械臂待機微動作 (Idle Breathing 微幅呼吸晃動)
+        const intensity = this.inputMapper.getIntensity();
+        if (intensity < 0.01 && !this.mission.isSecured && !this.mission.isIgniting) {
+            const idleOffset = Math.sin(this.idleTime * 1.5) * 0.012;
+            this.targetPos.y += idleOffset * dt;
+        }
+
+        // 2. 核心呼吸發光動畫
         if (this.armData.coreGlow) {
-            const pulse = 1.0 + Math.sin(Date.now() * 0.005) * 0.15;
+            const pulse = 1.0 + Math.sin(this.idleTime * 3.0) * 0.15;
             this.armData.coreGlow.scale.set(pulse, pulse, pulse);
         }
 
-        // 2. 操控映射 (基於當前視角前後左右平移)
+        // 3. 環境大氣浮塵與能量流動槽更新
+        this.atmosphere.update(dt);
+
+        // 4. 操控映射 (基於當前視角前後左右平移)
         this.inputMapper.update(this.targetPos, dt, camera);
 
-        // 3. 任務狀態、磁吸與點火序列
+        // 5. 任務狀態、磁吸與點火序列
         this.mission.update(dt, this.targetPos);
 
-        // 4. 阻尼 CCD-IK 逆運動學解算
+        // 6. 阻尼 CCD-IK 逆運動學解算
         CCDIKSolver.solve(
             this.armData.ikBones,
             this.armData.endEffector,
@@ -133,22 +153,22 @@ export class MainController {
             this.config.get('ik.damping')
         );
 
-        // 5. 夾爪開合插值動畫
+        // 7. 夾爪開合插值動畫
         this._updateGripper();
 
-        // 6. 相機視角更新 (點火時全景鏡頭，其餘時間允許玩家 360° 旋轉視角)
+        // 8. 相機視角更新 (點火時全景鏡頭，平時支援 360° 滑動環視)
         this._updateCamera(rawDt, camera);
 
-        // 7. 特效與震屏
+        // 9. 特效與震屏
         this.fx.update(rawDt);
 
-        // 8. 伺服馬達音調變頻
-        this.audio.setMotorPitch(this.inputMapper.getIntensity());
+        // 10. 伺服馬達音調變頻
+        this.audio.setMotorPitch(intensity);
 
-        // 9. 全息 HUD 數據刷新
+        // 11. 全息 HUD 數據刷新
         this.hud.update(this.targetPos, this.armData, this.mission);
 
-        // 10. WebGL 畫面渲染
+        // 12. WebGL 畫面渲染
         this.scene.render();
     }
 
@@ -173,9 +193,8 @@ export class MainController {
             return;
         }
 
-        // 平時啟用 OrbitControls，允許用戶手指/滑鼠自由拖曳旋轉多角度觀察
-        if (this.controls) {
-            this.controls.enabled = true;
+        // 平時啟用 OrbitControls
+        if (this.controls && this.controls.enabled) {
             this.controls.update();
         }
     }
@@ -185,11 +204,21 @@ export class MainController {
         const targetMesh = (slot === 'claw') ? this.armData.endEffector : this.armData.ikBones[2].obj;
 
         if (targetMesh && geometry) {
+            // 清理舊有的自訂裝配模型，防止重複疊加穿模
+            if (this.currentCustomMesh) {
+                this.currentCustomMesh.parent.remove(this.currentCustomMesh);
+                if (this.currentCustomMesh.geometry) this.currentCustomMesh.geometry.dispose();
+                if (this.currentCustomMesh.material) this.currentCustomMesh.material.dispose();
+                this.currentCustomMesh = null;
+            }
+
             const customMesh = new THREE.Mesh(
                 geometry,
-                new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.8, roughness: 0.2 })
+                new THREE.MeshStandardMaterial({ color: 0x00e5ff, metalness: 0.85, roughness: 0.2 })
             );
             targetMesh.add(customMesh);
+            this.currentCustomMesh = customMesh;
+
             this.inputMapper.setPayload(physics.mass > 0.5);
             this.hud.updateStatus('UGC_MODEL_LOADED');
         }
@@ -205,5 +234,10 @@ export class MainController {
         this.hud.dispose?.();
         this.fx.dispose?.();
         this.dropZone?.dispose?.();
+
+        if (this.currentCustomMesh) {
+            this.currentCustomMesh.geometry?.dispose();
+            this.currentCustomMesh.material?.dispose();
+        }
     }
 }
