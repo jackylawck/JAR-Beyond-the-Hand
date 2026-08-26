@@ -1,3 +1,4 @@
+import * as THREE from 'three';
 import { POOL } from './Pool.js';
 import { AudioEngine } from './AudioEngine.js';
 import { ArmBuilder } from '../kinematics/ArmBuilder.js';
@@ -75,11 +76,13 @@ export class MainController {
         this.coreAnimTime += dt;
 
         this.inputMapper.update(this.targetPos, dt, this.sceneMgr.camera);
-        this.mission.update(dt, this.targetPos);
+        
+        // 🌟 將 intensity 傳入 MissionManager (用於科研模式穩定度檢測)
+        this.mission.update(dt, this.targetPos, intensity);
 
         CCDIKSolver.solve(this.armData.ikBones, this.armData.endEffector, this.targetPos, 4, 0.8);
 
-        // 1. 液壓活塞與套筒物理聯動
+        // 液壓與套筒物理聯動
         if (this.armData.extensionRod && this.armData.joint2) {
             const currentDist = this.targetPos.length();
             const extendRatio = Math.max(0.0, Math.min(0.45, (currentDist - 1.0) * 0.4));
@@ -91,7 +94,7 @@ export class MainController {
             }
         }
 
-        // 2. 夾爪非線性 Ease In/Out 開合
+        // 夾爪非線性 Ease In/Out 開合
         const targetOpen = this.mission.clawOpen ? 1.0 : 0.0;
         this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * (14.0 * dt);
         const ease = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -100,20 +103,7 @@ export class MainController {
         this.armData.clawLeft.position.x = -offset;
         this.armData.clawRight.position.x = offset;
 
-        // 3. 🌟 雙層粒子立體正反自旋與呼吸光場
-        if (this.armData.coreParticlesInner) {
-            this.armData.coreParticlesInner.rotation.y += 2.2 * dt;
-        }
-        if (this.armData.coreParticlesOuter) {
-            this.armData.coreParticlesOuter.rotation.y -= 1.4 * dt;
-            this.armData.coreParticlesOuter.rotation.x += 0.8 * dt;
-        }
-        if (this.armData.coreGlowMesh) {
-            const pulse = 1.0 + Math.sin(this.coreAnimTime * 3.5) * 0.12;
-            this.armData.coreGlowMesh.scale.set(pulse, pulse, pulse);
-        }
-
-        // 4. LED 狀態指示燈
+        // LED 狀態指示燈
         if (this.armData.statusLed) {
             this.armData.statusLed.material.color.setHex(this.mission.isSecured ? 0x00ff66 : 0xff7700);
         }
