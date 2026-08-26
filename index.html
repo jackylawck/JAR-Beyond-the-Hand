@@ -18,81 +18,79 @@
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 </head>
 <body>
-    <!-- 模式選擇 -->
-    <div id="mode-selector" style="position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.95); backdrop-filter:blur(20px); display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.6s;">
-        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:4px; font-weight:800; margin-bottom: 5px;">⚡ J.A.R. 在手之上 3D</h1>
-        <p style="color:#8899aa; margin-bottom:30px;">請選擇你的自動化任務領域</p>
-        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
-            <div class="mode-card" data-mode="kid" style="background:rgba(0,229,255,0.05); border:2px solid rgba(0,229,255,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
-                <div style="font-size:42px;">🍓</div><h3 style="color:#fff; margin:12px 0 6px;">兒童模式</h3>
-                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">農業精準採摘</p>
+    <!-- 🌟 彈出式模式切換選單 (預設隱藏，點擊按鈕才彈出) -->
+    <div id="mode-selector" style="display:none; position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.88); backdrop-filter:blur(15px); flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.3s;">
+        <h2 style="color:#00e5ff; font-size:24px; letter-spacing:3px; font-weight:800; margin-bottom: 5px;">⚡ 切換任務模式</h2>
+        <p style="color:#8899aa; margin-bottom:25px; font-size:13px;">請選擇即將載入的自動化領域</p>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; justify-content:center;">
+            <div class="mode-card" data-mode="kid" style="background:rgba(0,229,255,0.05); border:2px solid rgba(0,229,255,0.3); border-radius:12px; padding:20px; width:160px; cursor:pointer; text-align:center; transition:0.2s;">
+                <div style="font-size:36px;">🍓</div>
+                <h3 style="color:#fff; margin:10px 0 4px; font-size:15px;">兒童模式</h3>
+                <p style="color:#8899aa; font-size:11px;">農業精準採摘</p>
             </div>
-            <div class="mode-card" data-mode="advanced" style="background:rgba(255,145,0,0.05); border:2px solid rgba(255,145,0,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
-                <div style="font-size:42px;">📱</div><h3 style="color:#fff; margin:12px 0 6px;">進階模式</h3>
-                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">3C 精密組裝</p>
+            <div class="mode-card" data-mode="advanced" style="background:rgba(255,145,0,0.05); border:2px solid rgba(255,145,0,0.3); border-radius:12px; padding:20px; width:160px; cursor:pointer; text-align:center; transition:0.2s;">
+                <div style="font-size:36px;">📱</div>
+                <h3 style="color:#fff; margin:10px 0 4px; font-size:15px;">進階模式</h3>
+                <p style="color:#8899aa; font-size:11px;">3C 精密組裝</p>
             </div>
-            <div class="mode-card" data-mode="research" style="background:rgba(255,61,0,0.05); border:2px solid rgba(255,61,0,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
-                <div style="font-size:42px;">🧪</div><h3 style="color:#fff; margin:12px 0 6px;">科研模式</h3>
-                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">實驗室自動化</p>
+            <div class="mode-card" data-mode="research" style="background:rgba(255,61,0,0.05); border:2px solid rgba(255,61,0,0.3); border-radius:12px; padding:20px; width:160px; cursor:pointer; text-align:center; transition:0.2s;">
+                <div style="font-size:36px;">🧪</div>
+                <h3 style="color:#fff; margin:10px 0 4px; font-size:15px;">科研模式</h3>
+                <p style="color:#8899aa; font-size:11px;">實驗室自動化</p>
             </div>
         </div>
-        <p style="color:#556677; font-size:11px; margin-top:30px; font-family:monospace;">支援 PC 操作：W/A/S/D 移動，Q/E 升降，SPACE 抓取</p>
+        <button id="btn-close-modal" style="margin-top:25px; background:transparent; border:1px solid #557788; color:#8899aa; padding:6px 18px; border-radius:4px; font-size:12px; cursor:pointer;">關閉</button>
     </div>
 
     <!-- 任務簡報覆蓋層 -->
-    <div id="briefing-overlay" style="display:none; position:absolute; z-index:90; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <div style="border:2px solid #00e5ff; border-radius:12px; padding:30px 40px; text-align:center; background:rgba(4,12,24,0.9); box-shadow:0 0 30px rgba(0,229,255,0.2);">
-            <h2 style="color:#00e5ff; letter-spacing:2px; margin-bottom:10px;">📋 任務簡報</h2>
-            <p id="briefing-text" style="color:#fff; font-size:16px; margin-bottom:20px;"></p>
-            <div style="font-size:24px; color:#ff9100; font-weight:bold;">倒數 <span id="briefing-countdown">3</span></div>
+    <div id="briefing-overlay" style="display:none; position:absolute; z-index:90; width:100%; height:100%; background:rgba(0,0,0,0.8); flex-direction:column; justify-content:center; align-items:center;">
+        <div style="border:2px solid #00e5ff; border-radius:12px; padding:25px 35px; text-align:center; background:rgba(4,12,24,0.92); box-shadow:0 0 30px rgba(0,229,255,0.2);">
+            <h2 style="color:#00e5ff; letter-spacing:2px; margin-bottom:8px;">📋 任務簡報</h2>
+            <p id="briefing-text" style="color:#fff; font-size:14px; margin-bottom:15px;"></p>
+            <div style="font-size:22px; color:#ff9100; font-weight:bold;">倒數 <span id="briefing-countdown">3</span></div>
         </div>
     </div>
 
     <!-- 認證戰績卡 -->
-    <div id="result-overlay" style="display:none; position:absolute; z-index:95; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <div id="share-card" style="border:2px solid #ff9100; border-radius:12px; padding:40px; text-align:center; background:rgba(20,10,4,0.95); box-shadow:0 0 40px rgba(255,145,0,0.3); width: 320px; position:relative; overflow:hidden;">
-            <div style="position:absolute; top:-20px; right:-20px; font-size:80px; opacity:0.05; color:#fff;">J.A.R.</div>
-            <h1 id="result-title" style="color:#fff; font-size:28px; margin-bottom:10px; letter-spacing:1px;">任務完成！</h1>
-            <div style="font-size:72px; font-weight:900; margin:5px 0; text-shadow:0 0 25px;" id="result-rank">S</div>
-            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; margin-bottom:20px;">
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span style="color:#aaa; font-size:14px;">耗時：</span><span id="result-time" style="color:#fff; font-weight:bold;">0 秒</span>
-                </div>
-                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
-                    <span style="color:#aaa; font-size:14px;">失誤：</span><span id="result-mistakes" style="color:#fff; font-weight:bold;">0 次</span>
-                </div>
-                <div style="display:flex; justify-content:space-between;">
-                    <span style="color:#aaa; font-size:14px;">認證碼：</span><span id="result-hash" style="color:#00e5ff; font-family:monospace; font-weight:bold;">JAR-8821</span>
-                </div>
+    <div id="result-overlay" style="display:none; position:absolute; z-index:95; width:100%; height:100%; background:rgba(0,0,0,0.85); flex-direction:column; justify-content:center; align-items:center;">
+        <div id="share-card" style="border:2px solid #ff9100; border-radius:12px; padding:35px; text-align:center; background:rgba(20,10,4,0.95); box-shadow:0 0 40px rgba(255,145,0,0.3); width: 300px; position:relative;">
+            <h1 id="result-title" style="color:#fff; font-size:26px; margin-bottom:10px;">任務完成！</h1>
+            <div style="font-size:64px; font-weight:900; margin:5px 0;" id="result-rank">S</div>
+            <div style="background:rgba(255,255,255,0.05); padding:12px; border-radius:8px; margin-bottom:15px; font-size:13px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:#aaa;">耗時：</span><span id="result-time" style="color:#fff; font-weight:bold;">0 秒</span></div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:4px;"><span style="color:#aaa;">失誤：</span><span id="result-mistakes" style="color:#fff; font-weight:bold;">0 次</span></div>
+                <div style="display:flex; justify-content:space-between;"><span style="color:#aaa;">認證碼：</span><span id="result-hash" style="color:#00e5ff; font-family:monospace; font-weight:bold;">JAR-8821</span></div>
             </div>
-            <p id="result-achievement" style="color:#eab308; font-weight:bold; font-size:14px; margin-bottom:20px; text-shadow: 0 0 10px rgba(234,179,8,0.5);"></p>
-            <p style="color:#556677; font-size:10px; margin-bottom:20px;">長按或截圖分享您的 J.A.R. 認證卡</p>
-            <button id="btn-restart" style="background:#ff9100; border:none; color:#fff; padding:12px 24px; font-size:16px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; box-shadow:0 4px 15px rgba(255,145,0,0.4);">返回主選單</button>
+            <p id="result-achievement" style="color:#eab308; font-weight:bold; font-size:13px; margin-bottom:15px;"></p>
+            <button id="btn-restart" style="background:#ff9100; border:none; color:#fff; padding:10px 20px; font-size:15px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%;">重新挑戰</button>
         </div>
     </div>
 
     <!-- J.A.R. AI 對話視窗 -->
-    <div id="jar-dialogue" style="display:none; position:absolute; bottom:130px; left:50%; transform:translateX(-50%); background:rgba(4,12,24,0.85); border:1px solid #00e5ff; border-left:4px solid #00e5ff; border-radius:6px; padding:12px 20px; width:85%; max-width:400px; z-index:80; backdrop-filter:blur(6px); box-shadow: 0 4px 20px rgba(0,229,255,0.2);">
-        <div id="jar-title" style="color:#00e5ff; font-weight:bold; font-size:11px; margin-bottom:6px; letter-spacing:1px; display:flex; justify-content:space-between;">
-            <span>J.A.R. 系統助理</span><span id="jar-status">在線</span>
+    <div id="jar-dialogue" style="display:none; position:absolute; bottom:130px; left:50%; transform:translateX(-50%); background:rgba(4,12,24,0.85); border:1px solid #00e5ff; border-left:4px solid #00e5ff; border-radius:6px; padding:12px 20px; width:85%; max-width:400px; z-index:80; backdrop-filter:blur(6px);">
+        <div id="jar-title" style="color:#00e5ff; font-weight:bold; font-size:11px; margin-bottom:4px; display:flex; justify-content:space-between;">
+            <span>J.A.R. 系統助理</span><span>在線</span>
         </div>
-        <div id="jar-text" style="color:#fff; font-size:14px; font-family:-apple-system, monospace; min-height:42px; line-height:1.4;">...</div>
+        <div id="jar-text" style="color:#fff; font-size:13px; font-family:monospace; min-height:36px; line-height:1.4;">...</div>
     </div>
 
     <div id="canvas-container"></div>
     
+    <!-- 全息 HUD -->
     <div id="hud">
         <div class="hud-header">
-            <div class="hud-title">⚡ J.A.R. 在手之上 3D // ARM-01</div>
+            <div class="hud-title">⚡ J.A.R. 在手之上 3D</div>
             <div class="header-controls">
+                <!-- 🌟 頂部即時切換模式按鈕 -->
+                <button id="btn-switch-mode" class="lang-btn" style="background:rgba(0,229,255,0.15); color:#00e5ff; border-color:#00e5ff; font-weight:bold;">🔀 切換模式</button>
                 <button id="lang-btn" class="lang-btn">🌐 EN / 中文</button>
                 <div id="status-tag" class="hud-status">系統就緒</div>
             </div>
         </div>
         <div class="mission-card">
             <div id="mission-title" class="mission-title">載入中...</div>
-            <div id="mission-desc" class="mission-desc">請先選擇模式</div>
-            <div id="view-hint" class="view-hint">💡 滑動可旋轉視角</div>
+            <div id="mission-desc" class="mission-desc">請操作機械臂</div>
+            <div id="view-hint" class="view-hint">💡 滑動旋轉視角 ｜ PC: WASD+QE+SPACE</div>
         </div>
         <div></div>
     </div>
