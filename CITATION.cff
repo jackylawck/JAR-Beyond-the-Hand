@@ -1,0 +1,18 @@
+cff-version: 1.2.0
+message: "If you use this software in your research or education, please cite it as below."
+title: "J.A.R. Beyond the Hand 3D: A Web-Based Platform for Additive Manufacturing Kinematics and V&V"
+authors:
+  - family-names: "Law"
+    given-names: "Jacky"
+version: 1.0.0
+date-released: 2026-08-26
+license: MIT
+repository-code: "https://github.com/jackylawck/beyond-the-hand"
+url: "https://jackylawck.github.io/beyond-the-hand/"
+keywords:
+  - robotics
+  - kinematics
+  - additive-manufacturing
+  - threejs
+  - webgl
+  - verification-and-validation
