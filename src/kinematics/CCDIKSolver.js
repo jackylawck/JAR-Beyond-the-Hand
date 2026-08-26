@@ -2,131 +2,72 @@ import * as THREE from 'three';
 import { POOL } from '../core/Pool.js';
 
 export class CCDIKSolver {
-    static CONFIG = {
-        maxIterations: 5,
-        damping: 0.75,
-        velocityLimit: 3.2,          // rad/s 最大角速度
-        accelerationLimit: 9.5,      // rad/s² 最大角加速度 (Jerk/Inertia 控制)
-        singularityThreshold: 0.015  // DLS 防抖閾值
-    };
+    /**
+     * 3A 級平滑阻尼 CCD-IK 解算器 (抗奇異點 + 最大角速度限幅)
+     */
+    static solve(ikBones, endEffector, targetPos, dt) {
+        if (!ikBones || !endEffector || !targetPos) return;
 
-    static solve(bones, endEffector, targetPosition, dt = 0.016) {
-        if (!bones || bones.length === 0 || !endEffector || !targetPosition) return;
-
-        const config = CCDIKSolver.CONFIG;
+        const maxIterations = 6;
+        const thresholdSq = 0.0001; // 1cm 精度
         const safeDt = Math.max(0.001, Math.min(0.05, dt));
-        const maxDeltaV = config.velocityLimit * safeDt;
-        const maxDeltaA = config.accelerationLimit * safeDt * safeDt;
 
-        for (let iter = 0; iter < config.maxIterations; iter++) {
-            for (let i = bones.length - 1; i >= 0; i--) {
-                const bone = bones[i];
-                const boneObj = bone.obj;
+        // 🌟 核心防發癲：限制每幀最大旋轉角速度 (Rad/s)
+        const maxAngularSpeed = 4.5; // rad/s
+        const maxStepAngle = maxAngularSpeed * safeDt;
 
-                // 1. 取得空間坐標與向量 (Zero-GC 靜態緩存)
-                endEffector.getWorldPosition(POOL.v1);
-                boneObj.getWorldPosition(POOL.v2);
+        for (let iter = 0; iter < maxIterations; iter++) {
+            endEffector.getWorldPosition(POOL.endPos);
+            if (POOL.endPos.distanceToSquared(targetPos) < thresholdSq) break;
 
-                POOL.toEnd.subVectors(POOL.v1, POOL.v2);
-                POOL.toTarget.subVectors(targetPosition, POOL.v2);
+            for (let i = ikBones.length - 1; i >= 0; i--) {
+                const bone = ikBones[i];
+                const obj = bone.obj;
+                const axis = bone.axis;
 
-                const lenEnd = POOL.toEnd.length();
-                const lenTarget = POOL.toTarget.length();
+                obj.getWorldPosition(POOL.bonePos);
+                endEffector.getWorldPosition(POOL.endPos);
 
-                if (lenEnd < 0.001 || lenTarget < 0.001) continue;
+                POOL.v1.subVectors(POOL.endPos, POOL.bonePos);
+                POOL.v2.subVectors(targetPos, POOL.bonePos);
 
-                POOL.toEnd.multiplyScalar(1.0 / lenEnd);
-                POOL.toTarget.multiplyScalar(1.0 / lenTarget);
+                // 投影到對應旋轉平面
+                let deltaAngle = 0;
 
-                // 2. 計算旋轉軸與夾角
-                POOL.cross.crossVectors(POOL.toEnd, POOL.toTarget);
-                const crossLen = POOL.cross.length();
-                if (crossLen < 0.0005) continue;
+                if (axis === 'Y') {
+                    const currentAngle = Math.atan2(POOL.v1.x, POOL.v1.z);
+                    const targetAngle = Math.atan2(POOL.v2.x, POOL.v2.z);
+                    deltaAngle = targetAngle - currentAngle;
 
-                const dot = Math.max(-1.0, Math.min(1.0, POOL.toEnd.dot(POOL.toTarget)));
-                const angle = Math.acos(dot);
+                    // 正規化到 [-PI, PI]
+                    while (deltaAngle > Math.PI) deltaAngle -= Math.PI * 2;
+                    while (deltaAngle < -Math.PI) deltaAngle += Math.PI * 2;
 
-                // 3. 阻尼最小二乘 (DLS) 奇異點防護
-                const dlsFactor = 1.0 / (crossLen + config.singularityThreshold);
-                let targetDelta = angle * config.damping * Math.min(1.0, dlsFactor);
+                    // 阻尼限幅
+                    deltaAngle = Math.max(-maxStepAngle, Math.min(maxStepAngle, deltaAngle * 0.65));
+                    obj.rotation.y += deltaAngle;
 
-                // 4. 軸向映射與肩部翻轉引導 (Shoulder Flip & Routing)
-                if (bone.axis === 'Y') {
-                    const curAngle = Math.atan2(POOL.toEnd.x, POOL.toEnd.z);
-                    const targetAngle = Math.atan2(POOL.toTarget.x, POOL.toTarget.z);
-                    let rawDelta = targetAngle - curAngle;
+                } else if (axis === 'X') {
+                    // 水平距離與垂直高度角度
+                    const len1 = Math.hypot(POOL.v1.x, POOL.v1.z);
+                    const len2 = Math.hypot(POOL.v2.x, POOL.v2.z);
+                    const curA = Math.atan2(POOL.v1.y, len1);
+                    const tarA = Math.atan2(POOL.v2.y, len2);
+                    deltaAngle = tarA - curA;
 
-                    while (rawDelta > Math.PI) rawDelta -= Math.PI * 2;
-                    while (rawDelta < -Math.PI) rawDelta += Math.PI * 2;
+                    while (deltaAngle > Math.PI) deltaAngle -= Math.PI * 2;
+                    while (deltaAngle < -Math.PI) deltaAngle += Math.PI * 2;
 
-                    targetDelta = Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * config.damping, maxDeltaV);
+                    deltaAngle = Math.max(-maxStepAngle, Math.min(maxStepAngle, deltaAngle * 0.65));
+                    obj.rotation.x += deltaAngle;
 
-                    // 5. 加速度濾波 (Jerk Limiting / Inertia Smoothing)
-                    const lastDelta = bone._lastDelta || 0;
-                    const deltaDiff = targetDelta - lastDelta;
-                    const clampedDiff = Math.max(-maxDeltaA, Math.min(maxDeltaA, deltaDiff));
-                    let finalDelta = lastDelta + clampedDiff;
-                    bone._lastDelta = finalDelta;
-
-                    let newAngle = boneObj.rotation.y + finalDelta;
-
-                    // 6. 柔性邊界減速 (Soft Clamping)
+                    // 軟關節限制 (防止關節反折翻轉)
                     if (bone.min !== undefined && bone.max !== undefined) {
-                        const range = bone.max - bone.min;
-                        const margin = range * 0.12;
-                        const lowerSoft = bone.min + margin;
-                        const upperSoft = bone.max - margin;
-
-                        if (newAngle < lowerSoft && finalDelta < 0) {
-                            const factor = Math.max(0.05, (newAngle - bone.min) / margin);
-                            newAngle = boneObj.rotation.y + finalDelta * factor;
-                        } else if (newAngle > upperSoft && finalDelta > 0) {
-                            const factor = Math.max(0.05, (bone.max - newAngle) / margin);
-                            newAngle = boneObj.rotation.y + finalDelta * factor;
-                        }
-                        newAngle = Math.max(bone.min, Math.min(bone.max, newAngle));
+                        obj.rotation.x = Math.max(bone.min, Math.min(bone.max, obj.rotation.x));
                     }
-
-                    boneObj.rotation.y = newAngle;
-                } else {
-                    // 關節俯仰 (Pitch 軸)
-                    const parentMatrix = boneObj.parent ? boneObj.parent.matrixWorld : boneObj.matrixWorld;
-                    POOL.m1.copy(parentMatrix).invert();
-                    const localCross = POOL.cross.transformDirection(POOL.m1);
-
-                    const sign = localCross.x >= 0 ? 1 : -1;
-                    targetDelta = Math.min(targetDelta, maxDeltaV) * sign;
-
-                    // 加速度濾波
-                    const lastDelta = bone._lastDelta || 0;
-                    const deltaDiff = targetDelta - lastDelta;
-                    const clampedDiff = Math.max(-maxDeltaA, Math.min(maxDeltaA, deltaDiff));
-                    let finalDelta = lastDelta + clampedDiff;
-                    bone._lastDelta = finalDelta;
-
-                    let newAngle = boneObj.rotation.x + finalDelta;
-
-                    // 柔性邊界減速
-                    if (bone.min !== undefined && bone.max !== undefined) {
-                        const range = bone.max - bone.min;
-                        const margin = range * 0.12;
-                        const lowerSoft = bone.min + margin;
-                        const upperSoft = bone.max - margin;
-
-                        if (newAngle < lowerSoft && finalDelta < 0) {
-                            const factor = Math.max(0.05, (newAngle - bone.min) / margin);
-                            newAngle = boneObj.rotation.x + finalDelta * factor;
-                        } else if (newAngle > upperSoft && finalDelta > 0) {
-                            const factor = Math.max(0.05, (bone.max - newAngle) / margin);
-                            newAngle = boneObj.rotation.x + finalDelta * factor;
-                        }
-                        newAngle = Math.max(bone.min, Math.min(bone.max, newAngle));
-                    }
-
-                    boneObj.rotation.x = newAngle;
                 }
 
-                boneObj.updateMatrixWorld(true);
+                obj.updateMatrixWorld(true);
             }
         }
     }
