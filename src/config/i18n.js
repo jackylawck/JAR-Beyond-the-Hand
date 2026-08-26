@@ -7,12 +7,20 @@ export const I18N = {
         switchMode: "🔀 切換模式",
         langBtn: "🌐 EN / 中文",
         
-        // 任務模式
+        modalTitle: "⚡ 切換任務模式",
+        modalDesc: "請選擇即將載入的自動化領域",
+        modalClose: "關閉",
+        modeKidTitle: "兒童模式",
+        modeKidDesc: "農業精準採摘",
+        modeAdvTitle: "進階模式",
+        modeAdvDesc: "3C 精密組裝",
+        modeResTitle: "科研模式",
+        modeResDesc: "實驗室自動化",
+
         kidTitle: "農業採摘 ｜ 力學遙測",
         advTitle: "3C 精密組裝 ｜ 姿態控制",
         resTitle: "科研實驗 ｜ 頻譜分析",
         
-        // 遙測面板標籤
         labelRadius: "工作半徑",
         labelError: "誤差 CI95%",
         labelPayload: "末端負載",
@@ -24,7 +32,6 @@ export const I18N = {
         btnRecordStop: "停止記錄",
         btnExportCsv: "導出 CSV",
 
-        // 任務指示
         missionKid: "初熟草莓",
         missionKidDesc: "移動夾爪至草莓正上方，按下 GRIP 抓取！",
         missionAdv: "精密晶片",
@@ -33,27 +40,34 @@ export const I18N = {
         missionResDesc: "平穩運送至反應爐，嚴格控制加速度！",
         viewHint: "💡 滑動旋轉視角 ｜ PC: WASD+QE+SPACE",
 
-        // J.A.R. 助理
         jarTitle: "J.A.R. 系統助理",
         jarStatus: "在線",
-        jarKidWelcome: "你好！我已經準備好幫你摘士多啤梨啦，慢慢嚟唔使急～🍓",
+        jarKidWelcome: "你好！我已經準備好幫你摘士多啤梨啦，慢慢嚟唔使急～ 🍓",
         jarAdvWelcome: "3C 精密裝配線就緒，請操作機械臂夾取主機板晶片。",
         jarResWelcome: "危險品實驗艙已密封，請以最小振動頻率將樣本移入插座。"
     },
     en: {
         appTitle: "⚡ J.A.R. BEYOND THE HAND 3D",
         statusReady: "SYSTEM READY",
-        statusActive: "OPERATIONAL",
-        statusComplete: "MISSION COMPLETE",
+        statusActive: "OPERATING",
+        statusComplete: "COMPLETE",
         switchMode: "🔀 Switch Mode",
         langBtn: "🌐 中文 / EN",
 
-        // Task Modes
+        modalTitle: "⚡ Select Operation Mode",
+        modalDesc: "Choose an automated robotics domain to load",
+        modalClose: "Close",
+        modeKidTitle: "Kid Mode",
+        modeKidDesc: "Agricultural Harvesting",
+        modeAdvTitle: "Advanced Mode",
+        modeAdvDesc: "3C Precision Assembly",
+        modeResTitle: "Research Mode",
+        modeResDesc: "Laboratory Automation",
+
         kidTitle: "Agri-Harvesting | Telemetry",
         advTitle: "3C Precision Assembly | IK",
         resTitle: "Research Lab | FFT Analysis",
 
-        // Telemetry Labels
         labelRadius: "Radius",
         labelError: "Error CI95%",
         labelPayload: "End Payload",
@@ -65,20 +79,18 @@ export const I18N = {
         btnRecordStop: "Stop Logging",
         btnExportCsv: "Export CSV",
 
-        // Mission Instructions
         missionKid: "Ripe Strawberry",
-        missionKidDesc: "Align gripper above strawberry, press GRIP to capture!",
+        missionKidDesc: "Align gripper directly above strawberry, press GRIP!",
         missionAdv: "Precision Microchip",
-        missionAdvDesc: "Carefully align with socket, watch for orientation error!",
+        missionAdvDesc: "Align carefully with the socket, watch joint angles!",
         missionRes: "Radioactive Isotope",
-        missionResDesc: "Gently transport to reactor socket, minimize vibrations!",
+        missionResDesc: "Transport sample into reactor with minimal vibration!",
         viewHint: "💡 Swipe to Rotate | PC: WASD+QE+SPACE",
 
-        // J.A.R. Assistant
-        jarTitle: "J.A.R. System AI",
+        jarTitle: "J.A.R. Assistant",
         jarStatus: "ONLINE",
-        jarKidWelcome: "Hello! I'm ready to help you pick strawberries. Take your time! 🍓",
-        jarAdvWelcome: "Precision assembly line ready. Manipulate arm to socket the chip.",
-        jarResWelcome: "Cleanroom sealed. Transfer isotope sample with minimal resonance."
+        jarKidWelcome: "Hello! I am ready to help you pick strawberries. Take your time! 🍓",
+        jarAdvWelcome: "Assembly line ready. Manipulate the arm to socket the microchip.",
+        jarResWelcome: "Cleanroom sealed. Carefully transfer the sample into the socket."
     }
 };
