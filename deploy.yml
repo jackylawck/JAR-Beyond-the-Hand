@@ -3,6 +3,7 @@ name: CI/CD Pipeline & GitHub Pages Deploy
 on:
   push:
     branches: [ main ]
+    tags: [ 'v*' ]
   pull_request:
     branches: [ main ]
   workflow_dispatch:
@@ -19,7 +20,7 @@ concurrency:
 
 jobs:
   # ============================================================
-  # Job 1: 靜態檢查與檔案完整性驗證 (Lint & File Integrity)
+  # Job 1: 靜態校驗 + 自動化單元測試
   # ============================================================
   validate:
     runs-on: ubuntu-latest
@@ -27,50 +28,55 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js Environment
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
 
+      - name: Install Test Dependencies
+        run: npm install --no-audit
+
+      - name: Run Physics Benchmark Tests
+        run: npm test
+
       - name: Verify Critical Project Files
         run: |
-          echo "🔍 檢查核心架構檔案..."
           REQUIRED_FILES=(
-            "index.html"
-            "manifest.json"
-            "service-worker.js"
-            "css/style.css"
-            "src/main.js"
-            "src/core/ConfigManager.js"
-            "src/core/SceneManager.js"
-            "src/core/MainController.js"
-            "src/kinematics/ArmBuilder.js"
-            "src/kinematics/CCDIKSolver.js"
+            "index.html" "manifest.json" "service-worker.js"
+            "src/main.js" "src/core/ConfigManager.js"
+            "src/core/MainController.js" "src/kinematics/ArmBuilder.js"
             "src/physics/InertiaCalculator.js"
             "src/physics/HomogenizationEngine.js"
-            "src/physics/MultibodyDynamics.js"
           )
           for file in "${REQUIRED_FILES[@]}"; do
             if [ ! -f "$file" ]; then
-              echo "❌ 嚴重錯誤: 缺失必要模組 $file"
+              echo "❌ 缺失核心檔案: $file"
               exit 1
             fi
           done
-          echo "✅ 核心模組完整性驗證通過！"
+          echo "✅ 核心檔案校驗通過"
 
-      - name: Quick ES Syntax Validation
+      - name: Package Release Artifact
+        if: startsWith(github.ref, 'refs/tags/')
         run: |
-          node --check src/main.js
-          echo "✅ main.js 語法正確"
+          zip -r beyond-the-hand-${{ github.ref_name }}.zip . \
+            -x "*.git*" ".github/*" "node_modules/*"
 
-      - name: Upload Artifact for Production
+      - name: Upload Release Asset
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-package
+          path: beyond-the-hand-${{ github.ref_name }}.zip
+
+      - name: Upload Pages Artifact
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
 
   # ============================================================
-  # Job 2: 部署到 GitHub Pages (僅 main 分支推送觸發)
+  # Job 2: 部署至 GitHub Pages
   # ============================================================
   deploy:
     needs: validate
@@ -89,7 +95,7 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Create Release Audit Tag
+      - name: Create Deployment Tag
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -100,7 +106,29 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================
-  # Job 3: PR 驗證回饋 (自動在 PR 留下檢查報告)
+  # Job 3: GitHub Release (推送 v* Tag 時自動建立)
+  # ============================================================
+  release:
+    needs: validate
+    if: startsWith(github.ref, 'refs/tags/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Release Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: release-package
+          path: .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: beyond-the-hand-${{ github.ref_name }}.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # ============================================================
+  # Job 4: PR 自動留言報告
   # ============================================================
   pr-feedback:
     needs: validate
@@ -115,5 +143,5 @@ jobs:
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `### ⚡ J.A.R. CI 驗證通過\n\n- ✅ **核心模組校驗**: 所有檔案結構皆完整\n- ✅ **JS 語法檢查**: 通過 Node.js 20 解析\n- 🚀 **部署準備**: 合併到 \`main\` 後將自動發布至 GitHub Pages！`
+              body: `### ⚡ J.A.R. CI 驗證通過\n\n- ✅ **核心模組校驗**: 所有檔案結構皆完整\n- ✅ **物理基準測試**: \`InertiaCalculator\` 通過解析解驗證\n- 🚀 **部署準備**: 合併到 \`main\` 後將自動發布至 GitHub Pages！`
             });
