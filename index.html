@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#020810">
 
-    <!-- 🔍 Google 網站驗證 (替換為你的驗證碼) -->
+    <!-- 🔍 Google 網站驗證 -->
     <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY" />
 
     <!-- 🌐 雙語全球 SEO 標籤 -->
@@ -33,13 +33,13 @@
     <meta name="twitter:description" content="High-fidelity 3D WebGL robotic arm simulator with real-time CCD-IK and dynamic FFT telemetry.">
     <meta name="twitter:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
 
-    <!-- 🔍 Google 結構化資料 (Schema.org JSON-LD) -->
+    <!-- 🔍 Google 結構化資料 -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "J.A.R. Beyond the Hand 3D",
-      "alternateName": "J.A.R. 在手之上 3D (Beyond the Hand 3D)",
+      "alternateName": "J.A.R. 在手之上 3D - 聯合應用科學探索",
       "url": "https://jackylawck.github.io/JAR-Beyond-the-Hand/",
       "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator featuring real-time CCD-IK, FFT vibration telemetry, and 3-tier career scenarios.",
       "applicationCategory": "EducationalApplication, SimulationApplication",
@@ -67,29 +67,21 @@
     <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
     <link rel="apple-touch-icon" href="jarBeyondtheHand192icon.png">
 
-    <!-- 🌟 Import Map -->
+    <!-- 🌟 統一 ES Module 映射 (徹底解決 OrbitControls 與多實例衝突) -->
     <script type="importmap">
     {
       "imports": {
-        "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js"
+        "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/"
       }
     }
     </script>
-
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/EffectComposer.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/RenderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/ShaderPass.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/CopyShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/shaders/LuminosityHighPassShader.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/postprocessing/UnrealBloomPass.js"></script>
 </head>
 <body>
     <!-- 📲 手機「加至主畫面」一鍵提示橫幅 -->
     <div id="pwa-install-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); width:90%; max-width:380px; background:rgba(4,14,28,0.92); border:1px solid #00e5ff; border-radius:10px; padding:10px 16px; z-index:200; box-shadow:0 4px 25px rgba(0,229,255,0.25); backdrop-filter:blur(10px); align-items:center; justify-content:space-between;">
         <div style="display:flex; align-items:center; gap:10px;">
-            <img src="jarBeyondtheHand192icon.png" style="width:36px; height:36px; border-radius:6px; border:1px solid rgba(0,229,255,0.4);" alt="App Icon">
+            <div style="width:36px; height:36px; border-radius:6px; background:#00e5ff; display:flex; align-items:center; justify-content:center; font-size:18px;">🦾</div>
             <div>
                 <div style="color:#fff; font-size:12px; font-weight:bold;">安裝 J.A.R. 機械臂 App</div>
                 <div style="color:#8899aa; font-size:10px;">加入手機主畫面，全螢幕沉浸體驗</div>
@@ -183,7 +175,6 @@
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- PWA 安裝監聽腳本 -->
     <script>
         let deferredPrompt;
         const banner = document.getElementById('pwa-install-banner');
