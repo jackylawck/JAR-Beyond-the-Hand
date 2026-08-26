@@ -1,3 +1,8 @@
+import * as THREE from 'three';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+
 export class SceneManager {
     constructor(containerId, mode = 'kid') {
         this.container = document.getElementById(containerId);
@@ -13,7 +18,6 @@ export class SceneManager {
         this.renderer.setSize(window.innerWidth, window.innerHeight);
         this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        // 🌟 降低曝光度，杜絕白濛濛
         this.renderer.toneMappingExposure = 1.0;
 
         this.renderer.shadowMap.enabled = true;
@@ -21,14 +25,11 @@ export class SceneManager {
         this.container.appendChild(this.renderer.domElement);
 
         this.dynamicElements = [];
+        this.composer = null;
 
-        // 1. 程序化 IBL
         this._buildProceduralIBL(mode);
-
-        // 2. 專屬高對比燈光
         this._buildLighting(mode);
 
-        // 3. 場景細節 (高對比溫室/工廠/實驗室)
         if (mode === 'kid') {
             this._buildGreenhouseFarmScene();
         } else if (mode === 'advanced') {
@@ -37,10 +38,26 @@ export class SceneManager {
             this._buildHighTechResearchScene();
         }
 
-        // 4. 動態懸浮粒子
         this._buildDynamicAtmosphere(mode);
-
+        this._setupPostProcessing(mode);
         this._bindResize();
+    }
+
+    _setupPostProcessing(mode) {
+        this.composer = new EffectComposer(this.renderer);
+        this.composer.addPass(new RenderPass(this.scene, this.camera));
+
+        const bloomStrength = mode === 'research' ? 0.35 : (mode === 'advanced' ? 0.22 : 0.12);
+        const bloomRadius = mode === 'research' ? 0.45 : 0.25;
+        const bloomThreshold = mode === 'research' ? 0.2 : 0.35;
+
+        const bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            bloomStrength,
+            bloomRadius,
+            bloomThreshold
+        );
+        this.composer.addPass(bloomPass);
     }
 
     _buildProceduralIBL(mode) {
@@ -49,7 +66,6 @@ export class SceneManager {
         const envScene = new THREE.Scene();
 
         if (mode === 'kid') {
-            // 溫室天幕漫射（深天藍頂光 + 翠綠地面反光）
             envScene.background = new THREE.Color(0xbae6fd);
             const skyLight = new THREE.Mesh(new THREE.BoxGeometry(20, 0.2, 20), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             skyLight.position.set(0, 8, 0);
@@ -75,11 +91,9 @@ export class SceneManager {
 
     _buildLighting(mode) {
         if (mode === 'kid') {
-            // 🌱 兒童溫室：通透蔚藍天空 + 暖陽日光（降低環境光以保留深色陰影對比）
-            this.scene.background = new THREE.Color(0x7dd3fc); // 蔚藍天空背景
-            this.scene.fog = new THREE.FogExp2(0x7dd3fc, 0.015); // 極淡的遠景霧
-
-            this.scene.add(new THREE.AmbientLight(0xffffff, 0.8)); // 🌟 大幅調低環境光
+            this.scene.background = new THREE.Color(0x7dd3fc);
+            this.scene.fog = new THREE.FogExp2(0x7dd3fc, 0.015);
+            this.scene.add(new THREE.AmbientLight(0xffffff, 0.8));
 
             const sun = new THREE.DirectionalLight(0xfff7ed, 2.2);
             sun.position.set(4, 9, 4);
@@ -89,7 +103,6 @@ export class SceneManager {
             sun.shadow.bias = -0.0005;
             this.scene.add(sun);
 
-            // 側向天光補光
             const skyFill = new THREE.DirectionalLight(0x38bdf8, 0.6);
             skyFill.position.set(-4, 4, -4);
             this.scene.add(skyFill);
@@ -115,9 +128,7 @@ export class SceneManager {
         }
     }
 
-    // 1. 🌱 兒童溫室：高對比自然農場（綠草地 + 深色原木台 + 鮮豔盆栽）
     _buildGreenhouseFarmScene() {
-        // 廣闊的深綠色草坪地面 (取代原先全白地板)
         const groundMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.85, metalness: 0.05 });
         const ground = new THREE.Mesh(new THREE.PlaneGeometry(30, 30), groundMat);
         ground.rotation.x = -Math.PI / 2;
@@ -125,9 +136,8 @@ export class SceneManager {
         ground.receiveShadow = true;
         this.scene.add(ground);
 
-        // 中央工作圓台：改用高級「深色胡桃木 / 啞光深灰石材」產生強烈反差
         const stationMat = new THREE.MeshStandardMaterial({ 
-            color: 0x1e293b, // 🌟 深藍灰基底，徹底襯托白色機械臂
+            color: 0x1e293b, 
             roughness: 0.4, 
             metalness: 0.2 
         });
@@ -136,7 +146,6 @@ export class SceneManager {
         station.receiveShadow = true;
         this.scene.add(station);
 
-        // 工作台邊緣亮黃色防護飾條
         const rim = new THREE.Mesh(
             new THREE.TorusGeometry(2.72, 0.02, 8, 48),
             new THREE.MeshStandardMaterial({ color: 0xf59e0b, roughness: 0.3, metalness: 0.5 })
@@ -145,7 +154,6 @@ export class SceneManager {
         rim.position.y = 0.16;
         this.scene.add(rim);
 
-        // 台面內嵌草皮工作墊
         const padMat = new THREE.MeshStandardMaterial({ color: 0x4ade80, roughness: 0.7 });
         const pad = new THREE.Mesh(new THREE.CircleGeometry(2.4, 32), padMat);
         pad.rotation.x = -Math.PI / 2;
@@ -153,7 +161,6 @@ export class SceneManager {
         pad.receiveShadow = true;
         this.scene.add(pad);
 
-        // 溫室深色鋼架立柱
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.9, roughness: 0.2 });
         for (let x = -6; x <= 6; x += 4) {
             const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.15, 7.0, 0.15), frameMat);
@@ -161,11 +168,9 @@ export class SceneManager {
             this.scene.add(pillar);
         }
 
-        // 6 盆鮮豔水耕番茄/草莓盆栽 (紅果 + 綠葉 + 陶土橙盆)
         for (let i = 0; i < 6; i++) {
             const potGroup = new THREE.Group();
             
-            // 陶土盆
             const pot = new THREE.Mesh(
                 new THREE.CylinderGeometry(0.14, 0.1, 0.16, 12),
                 new THREE.MeshStandardMaterial({ color: 0xc2410c, roughness: 0.9 })
@@ -173,7 +178,6 @@ export class SceneManager {
             pot.position.y = 0.08;
             potGroup.add(pot);
 
-            // 茂盛綠葉
             const foliage = new THREE.Mesh(
                 new THREE.SphereGeometry(0.14, 8, 8),
                 new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 })
@@ -181,7 +185,6 @@ export class SceneManager {
             foliage.position.y = 0.22;
             potGroup.add(foliage);
 
-            // 果實
             const berry = new THREE.Mesh(
                 new THREE.SphereGeometry(0.04, 8, 8),
                 new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.2 })
@@ -235,7 +238,6 @@ export class SceneManager {
 
     _buildDynamicAtmosphere(mode) {
         if (mode === 'kid') {
-            // 40 顆金色花粉
             const count = 40;
             const geo = new THREE.BufferGeometry();
             const pos = new Float32Array(count * 3);
@@ -276,13 +278,18 @@ export class SceneManager {
             this.camera.aspect = w / h;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(w, h);
+            if (this.composer) this.composer.setSize(w, h);
         });
     }
 
     render() {
         const dt = 0.016;
         this.dynamicElements.forEach(el => el.update(dt));
-        this.renderer.render(this.scene, this.camera);
+        if (this.composer) {
+            this.composer.render();
+        } else {
+            this.renderer.render(this.scene, this.camera);
+        }
     }
 
     dispose() {
