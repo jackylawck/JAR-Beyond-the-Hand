@@ -5,7 +5,5 @@ export const POOL = {
     right: new THREE.Vector3(),
     toEnd: new THREE.Vector3(),
     toTarget: new THREE.Vector3(),
-    cross: new THREE.Vector3(),
-    camLook: new THREE.Vector3(),
-    camTargetPos: new THREE.Vector3()
+    cross: new THREE.Vector3()
 };
