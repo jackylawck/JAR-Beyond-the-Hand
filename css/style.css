@@ -1,390 +1,366 @@
-/* =========================================================================
-   1. 基礎重置與手勢鎖定 (Zero-Interference Touch Layer)
-   ========================================================================= */
+/* ============================================================
+   1. Design Tokens (色彩系統 + 字體比例尺)
+   ============================================================ */
+:root {
+    /* 主色調 */
+    --color-primary: #00e5ff;
+    --color-primary-dim: rgba(0, 229, 255, 0.12);
+    --color-primary-glow: rgba(0, 229, 255, 0.4);
+
+    --color-accent: #ff9100;
+    --color-accent-dim: rgba(255, 145, 0, 0.15);
+    --color-accent-glow: rgba(255, 145, 0, 0.45);
+
+    --color-gold: #ffd700;
+    --color-gold-glow: rgba(255, 215, 0, 0.5);
+
+    --color-danger: #ff0044;
+    --color-danger-glow: rgba(255, 0, 68, 0.4);
+
+    --color-bg: #020810;
+    --color-surface: rgba(4, 12, 24, 0.88);
+    --color-text: #ffffff;
+    --color-text-dim: #8899aa;
+
+    /* 圓角與間距 */
+    --radius-sm: 4px;
+    --radius-md: 6px;
+    --radius-lg: 12px;
+    --radius-full: 50%;
+}
+
+/* ============================================================
+   2. 基礎重置與防跑版
+   ============================================================ */
 * {
     box-sizing: border-box;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
     margin: 0;
     padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
 }
 
 body, html {
-    width: 100%;
-    height: 100%;
+    width: 100vw;
+    height: 100vh;
     overflow: hidden;
-    background: #040810;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
-    touch-action: none;
-    overscroll-behavior: none;
+    background-color: var(--color-bg);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
 }
 
+/* ============================================================
+   3. Canvas 容器
+   ============================================================ */
 #canvas-container {
-    width: 100%;
-    height: 100%;
     position: absolute;
     top: 0;
     left: 0;
+    width: 100%;
+    height: 100%;
     z-index: 1;
 }
 
-/* =========================================================================
-   2. 電影級暗角與全息掃描線濾鏡 (Cinematic Overlay)
-   ========================================================================= */
-body::after {
-    content: " ";
-    display: block;
+/* ============================================================
+   4. 全息 HUD 系統 (置頂 + clamp 響應式 + 全息掃描線)
+   ============================================================ */
+#hud {
     position: absolute;
-    top: 0; left: 0; bottom: 0; right: 0;
-    background: 
-        radial-gradient(circle at center, transparent 55%, rgba(4, 8, 16, 0.85) 100%),
-        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.015) 3px);
+    top: clamp(10px, 2vh, 20px);
+    left: clamp(10px, 2vw, 20px);
+    z-index: 10;
     pointer-events: none;
-    z-index: 5;
-}
-
-/* =========================================================================
-   3. 啟動過渡畫面 (Splash Screen)
-   ========================================================================= */
-#splash-screen {
-    position: absolute;
-    z-index: 1000;
-    width: 100%;
-    height: 100%;
-    background: #040810;
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    transition: opacity 1.0s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: clamp(6px, 1vh, 10px);
+    max-width: min(320px, 85vw);
+    width: 100%;
+    overflow: hidden;
 }
 
-.splash-title {
-    color: #00e5ff;
-    font-size: 28px;
-    letter-spacing: 6px;
-    font-weight: 800;
-    text-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
-}
-
-.splash-sub {
-    color: #8899aa;
-    font-size: 12px;
-    letter-spacing: 3px;
-    margin-top: 6px;
-    text-transform: uppercase;
-}
-
-.splash-spinner {
-    margin-top: 24px;
-    width: 44px;
-    height: 44px;
-    border: 2px solid rgba(0, 229, 255, 0.15);
-    border-top: 2px solid #00e5ff;
-    border-radius: 50%;
-    animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
-    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
-}
-
-.splash-status {
-    color: #556677;
-    font-size: 10px;
-    margin-top: 16px;
-    letter-spacing: 1px;
-    font-family: 'Courier New', monospace;
-}
-
-@keyframes spin { 
-    to { transform: rotate(360deg); } 
-}
-
-/* =========================================================================
-   4. 全息 HUD 與動態任務面板 (Holo HUD Layer)
-   ========================================================================= */
-#hud {
+/* 🌟 全息掃描線動態氛圍 */
+#hud::before {
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
-    height: 100%;
+    height: 200%;
     pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    /* 適配手機劉海與圓角安全區 */
-    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
-    color: #00e5ff;
-    text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
-    transition: box-shadow 0.4s ease;
-    z-index: 10;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(0, 229, 255, 0.02) 3px,
+        rgba(0, 229, 255, 0.02) 4px
+    );
+    animation: scanLine 6s linear infinite;
+    z-index: 1;
 }
 
+@keyframes scanLine {
+    0% { transform: translateY(-50%); }
+    100% { transform: translateY(0%); }
+}
+
+/* 4a. HUD 標題與控制列 */
 .hud-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
+    gap: clamp(6px, 1vw, 12px);
+    pointer-events: auto;
+    flex-wrap: wrap;
+    position: relative;
+    z-index: 2;
 }
 
 .hud-title {
-    font-size: 16px;
+    color: var(--color-primary);
     font-weight: 800;
-    letter-spacing: 2px;
+    font-size: clamp(12px, 1.8vw, 16px);
+    letter-spacing: 0.5px;
+    text-shadow: 0 0 10px var(--color-primary-glow);
+    display: flex;
+    align-items: center;
+}
+
+/* 🌟 品牌 Signature 能量標記 */
+.hud-title::before {
+    content: "⚡";
+    margin-right: 4px;
+    display: inline-block;
+    animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px var(--color-primary)); }
+    50% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--color-primary)); }
 }
 
 .header-controls {
     display: flex;
+    gap: clamp(4px, 0.8vw, 8px);
     align-items: center;
-    gap: 8px;
-    pointer-events: auto;
+    flex-wrap: wrap;
 }
 
+/* 4b. 交互按鈕 */
 .lang-btn {
-    background: rgba(0, 229, 255, 0.12);
-    border: 1px solid #00e5ff;
-    color: #00e5ff;
-    font-size: 11px;
-    font-weight: bold;
-    padding: 4px 10px;
-    border-radius: 4px;
+    background: var(--color-primary-dim);
+    border: 1px solid var(--color-primary);
+    color: var(--color-primary);
+    font-size: clamp(10px, 1.2vw, 12px);
+    padding: 3px 8px;
+    border-radius: var(--radius-sm);
     cursor: pointer;
-    transition: all 0.2s ease;
+    backdrop-filter: blur(6px);
+    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+}
+
+.lang-btn:hover {
+    background: rgba(0, 229, 255, 0.25);
+    box-shadow: 0 0 8px var(--color-primary-glow);
 }
 
 .lang-btn:active {
-    background: #00e5ff;
-    color: #040810;
     transform: scale(0.95);
 }
 
+/* 4c. 狀態標籤與極限狀態動畫 */
 .hud-status {
-    font-size: 11px;
-    background: rgba(0, 229, 255, 0.12);
-    border: 1px solid #00e5ff;
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-family: monospace;
+    background: rgba(0, 170, 255, 0.15);
+    border: 1px solid #00aaff;
+    color: #00aaff;
+    font-size: clamp(10px, 1vw, 11px);
+    padding: 2px 7px;
+    border-radius: var(--radius-sm);
     transition: all 0.3s ease;
 }
 
+/* 🌟 S 級完成：金色能量爆發 */
+.hud-status.rank-s {
+    background: rgba(255, 215, 0, 0.25);
+    border-color: var(--color-gold);
+    color: var(--color-gold);
+    box-shadow: 0 0 20px var(--color-gold-glow);
+    animation: rankSGlow 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes rankSGlow {
+    0% { transform: scale(1.8); opacity: 0; }
+    50% { transform: scale(1.1); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+/* 🌟 失敗/危急：紅光警報脈衝 */
+.hud-status.fail {
+    background: rgba(255, 0, 68, 0.25);
+    border-color: var(--color-danger);
+    color: var(--color-danger);
+    box-shadow: 0 0 15px var(--color-danger-glow);
+    animation: failPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes failPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.4; transform: scale(0.96); }
+}
+
+/* 4d. 任務指示卡 (含呼吸邊框與專屬水印) */
 .mission-card {
-    background: rgba(4, 12, 24, 0.88);
-    border-left: 3px solid #ff9100;
-    padding: 10px 14px;
-    border-radius: 0 8px 8px 0;
-    max-width: 340px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+    background: var(--color-surface);
+    border: 1px solid rgba(0, 229, 255, 0.25);
+    border-left: 3px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    padding: clamp(8px, 1.2vh, 12px) clamp(10px, 1.5vw, 16px);
     backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
     pointer-events: auto;
+    width: 100%;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    position: relative;
+    animation: borderPulse 4s ease-in-out infinite;
+    z-index: 2;
+}
+
+@keyframes borderPulse {
+    0%, 100% { border-left-color: var(--color-primary); }
+    50% { border-left-color: rgba(0, 229, 255, 0.3); }
+}
+
+/* 🌟 J.A.R. 專屬研發水印 */
+.mission-card::after {
+    content: "J.A.R. MATRIX // v10.0";
+    position: absolute;
+    bottom: 3px;
+    right: 8px;
+    font-size: 8px;
+    color: rgba(0, 229, 255, 0.25);
+    font-family: monospace;
+    letter-spacing: 1px;
+    pointer-events: none;
 }
 
 .mission-title {
-    color: #ff9100;
-    font-size: 11px;
+    color: var(--color-text);
     font-weight: bold;
-    letter-spacing: 1px;
+    font-size: clamp(12px, 1.4vw, 14px);
+    margin-bottom: 3px;
 }
 
-.mission-guidance-text {
-    font-size: 13px;
-    font-weight: bold;
-    color: #00e5ff;
-    margin-top: 3px;
+.mission-desc {
+    color: var(--color-primary);
+    font-size: clamp(11px, 1.2vw, 13px);
+    margin-bottom: 3px;
 }
 
 .view-hint {
-    font-size: 10px;
-    color: #8899aa;
-    margin-top: 4px;
+    color: var(--color-text-dim);
+    font-size: clamp(9px, 0.9vw, 11px);
 }
 
-.progress-bar-bg {
-    width: 100%;
-    height: 4px;
-    background: rgba(255, 255, 255, 0.15);
-    border-radius: 2px;
-    margin-top: 8px;
-    overflow: hidden;
-}
-
-.progress-bar-fill {
-    width: 15%;
-    height: 100%;
-    background: #00e5ff;
-    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 0 8px #00e5ff;
-}
-
-/* =========================================================================
-   5. 虛擬搖桿與動作按鈕 (Tactile Controls)
-   ========================================================================= */
+/* ============================================================
+   5. 雙搖桿與動作按鈕 (觸控與 PC 同步置頂)
+   ============================================================ */
 .controls-overlay {
     position: absolute;
-    bottom: 0;
+    top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    pointer-events: none;
     z-index: 20;
+    pointer-events: none;
 }
 
-.joystick-zone {
+/* 左搖桿 (水平平移) */
+#joy-left {
     position: absolute;
-    bottom: max(25px, env(safe-area-inset-bottom));
-    width: 130px;
-    height: 130px;
-    background: radial-gradient(circle, rgba(0, 229, 255, 0.08), rgba(0, 229, 255, 0.01));
-    border: 1px dashed rgba(0, 229, 255, 0.4);
-    border-radius: 50%;
+    bottom: clamp(16px, 4vh, 32px);
+    left: clamp(16px, 3vw, 36px);
+    width: clamp(85px, 12vw, 115px);
+    height: clamp(85px, 12vw, 115px);
+    background: rgba(0, 229, 255, 0.05);
+    border: 2px dashed rgba(0, 229, 255, 0.3);
+    border-radius: var(--radius-full);
     pointer-events: auto;
     touch-action: none;
+    transition: border-color 0.2s, background 0.2s;
 }
 
-#joy-left {
-    left: max(25px, env(safe-area-inset-left));
-}
-
+/* 右搖桿 (垂直升降) */
 #joy-right {
-    right: max(25px, env(safe-area-inset-right));
+    position: absolute;
+    bottom: clamp(16px, 4vh, 32px);
+    right: clamp(100px, 14vw, 145px);
+    width: clamp(85px, 12vw, 115px);
+    height: clamp(85px, 12vw, 115px);
+    background: rgba(0, 229, 255, 0.05);
+    border: 2px dashed rgba(0, 229, 255, 0.3);
+    border-radius: var(--radius-full);
+    pointer-events: auto;
+    touch-action: none;
+    transition: border-color 0.2s, background 0.2s;
 }
 
 .joy-knob {
-    width: 46px;
-    height: 46px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #00e5ff, #005f6b);
     position: absolute;
-    top: 42px;
-    left: 42px;
-    pointer-events: none;
-    box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
-    border: 1px solid rgba(255, 255, 255, 0.4);
-}
-
-.action-btn {
-    position: absolute;
-    bottom: calc(max(25px, env(safe-area-inset-bottom)) + 150px);
-    right: max(35px, env(safe-area-inset-right));
-    width: 68px;
-    height: 68px;
-    border-radius: 50%;
-    background: radial-gradient(circle at 35% 35%, #ff4d00, #7a1200);
-    border: 2px solid #ff9100;
-    color: #fff;
-    font-weight: 800;
-    font-size: 12px;
-    pointer-events: auto;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    box-shadow: 0 0 20px rgba(255, 61, 0, 0.6);
-    cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
-}
-
-.action-btn:active {
-    transform: scale(0.92);
-    box-shadow: 0 0 10px rgba(255, 61, 0, 0.8);
-}
-
-/* =========================================================================
-   6. 3A 結算面板 (Victory / Evaluation Screen)
-   ========================================================================= */
-#success-screen {
-    display: none;
-    position: absolute;
-    z-index: 100;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background: rgba(4, 12, 24, 0.96);
-    border: 2px solid #00ff66;
-    border-radius: 12px;
-    padding: 24px 32px;
-    text-align: center;
-    backdrop-filter: blur(14px);
-    -webkit-backdrop-filter: blur(14px);
-    box-shadow: 0 0 40px rgba(0, 255, 100, 0.35);
-    min-width: 300px;
+    width: clamp(34px, 4.5vw, 46px);
+    height: clamp(34px, 4.5vw, 46px);
+    background: radial-gradient(circle, #00e5ff 0%, #007799 100%);
+    border-radius: var(--radius-full);
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+    pointer-events: none;
 }
 
-.trophy-icon {
-    font-size: 36px;
-    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
-}
-
-.success-title {
-    color: #00ff66;
-    font-size: 20px;
-    margin: 6px 0;
-    letter-spacing: 1px;
-}
-
-.record-badge {
-    display: none;
-    background: #ff9100;
-    color: #040810;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-bottom: 8px;
-}
-
-.score-card {
+/* 🌟 右下角 GRIP 動作按鈕 */
+#btn-grip {
+    position: absolute;
+    bottom: clamp(18px, 4.2vh, 36px);
+    right: clamp(16px, 3vw, 32px);
+    width: clamp(68px, 9vw, 84px);
+    height: clamp(68px, 9vw, 84px);
+    background: radial-gradient(circle, #ff9100 0%, #d84315 100%);
+    border: 2px solid #ffab40;
+    border-radius: var(--radius-full);
+    color: #fff;
+    font-weight: 900;
+    font-size: clamp(13px, 1.6vw, 16px);
+    letter-spacing: 0.5px;
     display: flex;
-    justify-content: space-around;
-    margin: 14px 0;
-    background: rgba(0, 229, 255, 0.06);
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid rgba(0, 229, 255, 0.15);
-}
-
-.score-label {
-    color: #8899aa;
-    font-size: 11px;
-}
-
-.score-val {
-    font-weight: bold;
-    font-size: 16px;
-    font-variant-numeric: tabular-nums;
-    font-family: monospace;
-}
-
-.score-val.cyan { color: #00e5ff; }
-.score-val.white { color: #fff; }
-.score-val.green { color: #00ff66; }
-
-.btn-group {
-    display: flex;
-    gap: 8px;
-}
-
-.btn-action {
-    flex: 1;
-    padding: 8px 12px;
-    border-radius: 6px;
-    font-weight: bold;
-    font-size: 12px;
+    justify-content: center;
+    align-items: center;
+    box-shadow: 0 0 25px rgba(255, 145, 0, 0.4);
     cursor: pointer;
-    transition: all 0.2s ease;
+    pointer-events: auto;
+    transition: transform 0.08s ease, box-shadow 0.2s ease;
 }
 
-.btn-action:active {
-    transform: scale(0.96);
+#btn-grip:hover {
+    box-shadow: 0 0 35px rgba(255, 145, 0, 0.65);
 }
 
-.btn-cyan {
-    background: #00e5ff;
-    border: none;
-    color: #040810;
+#btn-grip:active {
+    transform: scale(0.92);
+    box-shadow: 0 0 12px rgba(255, 145, 0, 0.8);
 }
 
-.btn-outline {
-    background: #112233;
-    border: 1px solid #00e5ff;
-    color: #00e5ff;
+/* ============================================================
+   6. 窄螢幕與橫向極限響應式適配
+   ============================================================ */
+@media (max-height: 500px) {
+    #hud {
+        gap: 4px;
+        top: 6px;
+    }
+    .mission-card {
+        padding: 4px 8px;
+    }
+    #joy-left, #joy-right {
+        bottom: 8px;
+    }
+    #btn-grip {
+        bottom: 10px;
+    }
 }
