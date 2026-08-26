@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>J.A.R. 在手之上 3D ｜ Beyond the Hand 3D</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- 全域 Three.js 與 OrbitControls -->
+    <!-- Three.js + OrbitControls -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
@@ -36,7 +36,7 @@
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- ES Module 主入口 -->
+    <!-- 🌟 關鍵：必須帶 type="module" 才能加載 src/main.js -->
     <script type="module" src="src/main.js"></script>
 </body>
 </html>
