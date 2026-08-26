@@ -1,22 +1,24 @@
 {
-  "name": "J.A.R. Beyond the Hand 3D",
+  "name": "J.A.R. 在手之上 3D",
   "short_name": "在手之上",
-  "description": "Robotic Arm Kinematics & Additive Manufacturing V&V Platform",
+  "description": "高保真 WebGL 工業與科研機械臂 3D 模擬器",
   "start_url": "./index.html",
   "display": "standalone",
-  "orientation": "landscape",
-  "background_color": "#040810",
-  "theme_color": "#00e5ff",
+  "orientation": "landscape-primary",
+  "background_color": "#020810",
+  "theme_color": "#020810",
   "icons": [
     {
-      "src": "icons/icon-192.png",
+      "src": "jarBeyondtheHand192icon.png",
       "sizes": "192x192",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     },
     {
-      "src": "icons/icon-512.png",
+      "src": "jarBeyondtheHand512icon.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ]
 }
