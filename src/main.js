@@ -7,62 +7,71 @@ let currentMode = 'kid';
 let currentLang = 'zh';
 
 function startApp(mode) {
-    if (controller) {
-        controller.dispose();
-    }
-    if (sceneMgr) {
-        sceneMgr.dispose();
-    }
+    try {
+        if (controller) {
+            controller.dispose();
+            controller = null;
+        }
+        if (sceneMgr) {
+            sceneMgr.dispose();
+            sceneMgr = null;
+        }
 
-    const container = document.getElementById('canvas-container');
-    container.innerHTML = '';
+        const container = document.getElementById('canvas-container');
+        if (container) {
+            container.innerHTML = '';
+        }
 
-    sceneMgr = new SceneManager('canvas-container', mode);
-    controller = new MainController(sceneMgr, mode);
-    controller.init();
-    controller.setLanguage(currentLang);
+        sceneMgr = new SceneManager('canvas-container', mode);
+        controller = new MainController(sceneMgr, mode);
+        controller.init();
+        controller.setLanguage(currentLang);
+    } catch (err) {
+        console.error("Simulation Start Error:", err);
+    }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-    // 1. 啟動預設兒童模式
-    startApp(currentMode);
+// 🌟 核心修復：ES Module 直接執行，確保 iOS Safari 100% 啟動
+startApp(currentMode);
 
-    // 2. 模式切換 Modal 綁定
-    const modal = document.getElementById('mode-selector');
-    const btnSwitch = document.getElementById('btn-switch-mode');
-    const btnClose = document.getElementById('btn-close-modal');
+// 綁定 UI 切換邏輯
+const modal = document.getElementById('mode-selector');
+const btnSwitch = document.getElementById('btn-switch-mode');
+const btnClose = document.getElementById('btn-close-modal');
 
-    if (btnSwitch && modal) {
-        btnSwitch.addEventListener('click', () => {
-            modal.style.display = 'flex';
-        });
-    }
-
-    if (btnClose && modal) {
-        btnClose.addEventListener('click', () => {
-            modal.style.display = 'none';
-        });
-    }
-
-    document.querySelectorAll('.mode-card').forEach(card => {
-        card.addEventListener('click', () => {
-            const m = card.getAttribute('data-mode');
-            if (m) {
-                currentMode = m;
-                startApp(currentMode);
-                if (modal) modal.style.display = 'none';
-            }
-        });
+if (btnSwitch && modal) {
+    btnSwitch.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modal.style.display = 'flex';
     });
+}
 
-    // 3. 雙語即時熱切換按鈕
-    const langBtn = document.getElementById('lang-btn');
-    if (langBtn) {
-        langBtn.addEventListener('click', () => {
-            currentLang = (currentLang === 'zh') ? 'en' : 'zh';
-            if (controller) {
-                controller.setLanguage(currentLang);
-            }
-        });
-    }
+if (btnClose && modal) {
+    btnClose.addEventListener('click', (e) => {
+        e.stopPropagation();
+        modal.style.display = 'none';
+    });
+}
+
+document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const m = card.getAttribute('data-mode');
+        if (m) {
+            currentMode = m;
+            startApp(currentMode);
+            if (modal) modal.style.display = 'none';
+        }
+    });
 });
+
+const langBtn = document.getElementById('lang-btn');
+if (langBtn) {
+    langBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentLang = (currentLang === 'zh') ? 'en' : 'zh';
+        if (controller) {
+            controller.setLanguage(currentLang);
+        }
+    });
+}
