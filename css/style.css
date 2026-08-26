@@ -1,24 +1,52 @@
+/* =========================================================================
+   1. 基礎重置與手勢鎖定 (Zero-Interference Touch Layer)
+   ========================================================================= */
 * {
     box-sizing: border-box;
     user-select: none;
     -webkit-user-select: none;
+    -webkit-touch-callout: none;
     margin: 0;
     padding: 0;
 }
+
 body, html {
     width: 100%;
     height: 100%;
     overflow: hidden;
     background: #040810;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+    touch-action: none;
+    overscroll-behavior: none;
 }
+
 #canvas-container {
     width: 100%;
     height: 100%;
     position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
 }
 
-/* 啟動畫面 */
+/* =========================================================================
+   2. 電影級暗角與全息掃描線濾鏡 (Cinematic Overlay)
+   ========================================================================= */
+body::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0; left: 0; bottom: 0; right: 0;
+    background: 
+        radial-gradient(circle at center, transparent 55%, rgba(4, 8, 16, 0.85) 100%),
+        repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 229, 255, 0.015) 3px);
+    pointer-events: none;
+    z-index: 5;
+}
+
+/* =========================================================================
+   3. 啟動過渡畫面 (Splash Screen)
+   ========================================================================= */
 #splash-screen {
     position: absolute;
     z-index: 1000;
@@ -29,38 +57,51 @@ body, html {
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    transition: opacity 1.0s;
+    transition: opacity 1.0s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
 .splash-title {
     color: #00e5ff;
     font-size: 28px;
     letter-spacing: 6px;
     font-weight: 800;
-    text-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+    text-shadow: 0 0 30px rgba(0, 229, 255, 0.5);
 }
+
 .splash-sub {
     color: #8899aa;
     font-size: 12px;
     letter-spacing: 3px;
     margin-top: 6px;
+    text-transform: uppercase;
 }
+
 .splash-spinner {
     margin-top: 24px;
     width: 44px;
     height: 44px;
-    border: 2px solid #00e5ff;
-    border-top-color: transparent;
+    border: 2px solid rgba(0, 229, 255, 0.15);
+    border-top: 2px solid #00e5ff;
     border-radius: 50%;
-    animation: spin 1s linear infinite;
+    animation: spin 1s cubic-bezier(0.68, -0.55, 0.27, 1.55) infinite;
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
 }
+
 .splash-status {
     color: #556677;
     font-size: 10px;
     margin-top: 16px;
+    letter-spacing: 1px;
+    font-family: 'Courier New', monospace;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
 
-/* 全息 HUD */
+@keyframes spin { 
+    to { transform: rotate(360deg); } 
+}
+
+/* =========================================================================
+   4. 全息 HUD 與動態任務面板 (Holo HUD Layer)
+   ========================================================================= */
 #hud {
     position: absolute;
     top: 0;
@@ -71,50 +112,93 @@ body, html {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 16px;
+    /* 適配手機劉海與圓角安全區 */
+    padding: max(16px, env(safe-area-inset-top)) max(16px, env(safe-area-inset-right)) max(16px, env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
     color: #00e5ff;
     text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
-    transition: box-shadow 0.3s;
+    transition: box-shadow 0.4s ease;
+    z-index: 10;
 }
+
 .hud-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
 }
+
 .hud-title {
     font-size: 16px;
     font-weight: 800;
     letter-spacing: 2px;
 }
+
+.header-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    pointer-events: auto;
+}
+
+.lang-btn {
+    background: rgba(0, 229, 255, 0.12);
+    border: 1px solid #00e5ff;
+    color: #00e5ff;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 4px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.lang-btn:active {
+    background: #00e5ff;
+    color: #040810;
+    transform: scale(0.95);
+}
+
 .hud-status {
     font-size: 11px;
     background: rgba(0, 229, 255, 0.12);
     border: 1px solid #00e5ff;
     padding: 4px 10px;
     border-radius: 4px;
-    transition: 0.3s;
+    font-family: monospace;
+    transition: all 0.3s ease;
 }
+
 .mission-card {
-    background: rgba(4, 12, 24, 0.85);
+    background: rgba(4, 12, 24, 0.88);
     border-left: 3px solid #ff9100;
     padding: 10px 14px;
     border-radius: 0 8px 8px 0;
-    max-width: 320px;
+    max-width: 340px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(6px);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    pointer-events: auto;
 }
+
 .mission-title {
     color: #ff9100;
     font-size: 11px;
     font-weight: bold;
     letter-spacing: 1px;
 }
+
 .mission-guidance-text {
     font-size: 13px;
     font-weight: bold;
     color: #00e5ff;
     margin-top: 3px;
 }
+
+.view-hint {
+    font-size: 10px;
+    color: #8899aa;
+    margin-top: 4px;
+}
+
 .progress-bar-bg {
     width: 100%;
     height: 4px;
@@ -123,15 +207,18 @@ body, html {
     margin-top: 8px;
     overflow: hidden;
 }
+
 .progress-bar-fill {
     width: 15%;
     height: 100%;
     background: #00e5ff;
-    transition: width 0.3s;
+    transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 0 8px #00e5ff;
 }
 
-/* 搖桿與控制按鈕 */
+/* =========================================================================
+   5. 虛擬搖桿與動作按鈕 (Tactile Controls)
+   ========================================================================= */
 .controls-overlay {
     position: absolute;
     bottom: 0;
@@ -139,10 +226,12 @@ body, html {
     width: 100%;
     height: 100%;
     pointer-events: none;
+    z-index: 20;
 }
+
 .joystick-zone {
     position: absolute;
-    bottom: 25px;
+    bottom: max(25px, env(safe-area-inset-bottom));
     width: 130px;
     height: 130px;
     background: radial-gradient(circle, rgba(0, 229, 255, 0.08), rgba(0, 229, 255, 0.01));
@@ -151,27 +240,36 @@ body, html {
     pointer-events: auto;
     touch-action: none;
 }
-#joy-left { left: 25px; }
-#joy-right { right: 25px; }
+
+#joy-left {
+    left: max(25px, env(safe-area-inset-left));
+}
+
+#joy-right {
+    right: max(25px, env(safe-area-inset-right));
+}
+
 .joy-knob {
     width: 46px;
     height: 46px;
     border-radius: 50%;
-    background: radial-gradient(circle, #00e5ff, #006b7a);
+    background: radial-gradient(circle at 35% 35%, #00e5ff, #005f6b);
     position: absolute;
     top: 42px;
     left: 42px;
     pointer-events: none;
-    box-shadow: 0 0 14px #00e5ff;
+    box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
+    border: 1px solid rgba(255, 255, 255, 0.4);
 }
+
 .action-btn {
     position: absolute;
-    bottom: 175px;
-    right: 35px;
+    bottom: calc(max(25px, env(safe-area-inset-bottom)) + 150px);
+    right: max(35px, env(safe-area-inset-right));
     width: 68px;
     height: 68px;
     border-radius: 50%;
-    background: radial-gradient(circle, #ff3d00, #7a1200);
+    background: radial-gradient(circle at 35% 35%, #ff4d00, #7a1200);
     border: 2px solid #ff9100;
     color: #fff;
     font-weight: 800;
@@ -180,12 +278,19 @@ body, html {
     display: flex;
     justify-content: center;
     align-items: center;
-    box-shadow: 0 0 18px rgba(255, 61, 0, 0.6);
+    box-shadow: 0 0 20px rgba(255, 61, 0, 0.6);
     cursor: pointer;
+    transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
-.action-btn:active { transform: scale(0.92); }
 
-/* 結算面板 */
+.action-btn:active {
+    transform: scale(0.92);
+    box-shadow: 0 0 10px rgba(255, 61, 0, 0.8);
+}
+
+/* =========================================================================
+   6. 3A 結算面板 (Victory / Evaluation Screen)
+   ========================================================================= */
 #success-screen {
     display: none;
     position: absolute;
@@ -199,20 +304,34 @@ body, html {
     padding: 24px 32px;
     text-align: center;
     backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
     box-shadow: 0 0 40px rgba(0, 255, 100, 0.35);
+    min-width: 300px;
 }
-.trophy-icon { font-size: 36px; }
-.success-title { color: #00ff66; font-size: 20px; margin: 6px 0; }
+
+.trophy-icon {
+    font-size: 36px;
+    filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.6));
+}
+
+.success-title {
+    color: #00ff66;
+    font-size: 20px;
+    margin: 6px 0;
+    letter-spacing: 1px;
+}
+
 .record-badge {
     display: none;
     background: #ff9100;
-    color: #000;
+    color: #040810;
     font-size: 10px;
     font-weight: bold;
     padding: 2px 8px;
     border-radius: 10px;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
 }
+
 .score-card {
     display: flex;
     justify-content: space-around;
@@ -220,14 +339,30 @@ body, html {
     background: rgba(0, 229, 255, 0.06);
     padding: 10px;
     border-radius: 8px;
+    border: 1px solid rgba(0, 229, 255, 0.15);
 }
-.score-label { color: #8899aa; font-size: 11px; }
-.score-val { font-weight: bold; font-size: 16px; }
+
+.score-label {
+    color: #8899aa;
+    font-size: 11px;
+}
+
+.score-val {
+    font-weight: bold;
+    font-size: 16px;
+    font-variant-numeric: tabular-nums;
+    font-family: monospace;
+}
+
 .score-val.cyan { color: #00e5ff; }
 .score-val.white { color: #fff; }
 .score-val.green { color: #00ff66; }
 
-.btn-group { display: flex; gap: 8px; }
+.btn-group {
+    display: flex;
+    gap: 8px;
+}
+
 .btn-action {
     flex: 1;
     padding: 8px 12px;
@@ -235,6 +370,21 @@ body, html {
     font-weight: bold;
     font-size: 12px;
     cursor: pointer;
+    transition: all 0.2s ease;
 }
-.btn-cyan { background: #00e5ff; border: none; color: #040810; }
-.btn-outline { background: #112233; border: 1px solid #00e5ff; color: #00e5ff; }
+
+.btn-action:active {
+    transform: scale(0.96);
+}
+
+.btn-cyan {
+    background: #00e5ff;
+    border: none;
+    color: #040810;
+}
+
+.btn-outline {
+    background: #112233;
+    border: 1px solid #00e5ff;
+    color: #00e5ff;
+}
