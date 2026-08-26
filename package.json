@@ -1,0 +1,19 @@
+{
+  "name": "beyond-the-hand",
+  "version": "1.0.0",
+  "description": "J.A.R. Beyond the Hand 3D: Robotic Arm Kinematics & Additive Manufacturing V&V Platform",
+  "type": "module",
+  "scripts": {
+    "start": "npx serve .",
+    "test:syntax": "node --check src/main.js"
+  },
+  "keywords": [
+    "robotics",
+    "threejs",
+    "pwa",
+    "kinematics",
+    "additive-manufacturing"
+  ],
+  "author": "Jacky Law",
+  "license": "MIT"
+}
