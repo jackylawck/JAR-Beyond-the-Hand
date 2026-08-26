@@ -9,8 +9,17 @@ export const I18N = {
         step2: "🟢 按下 GRIP 抓取！",
         step3: "➡️ 移動至右側基座槽位",
         step4: "✅ 釋放 GRIP 完成安裝！",
+        dropWarn: "⚠️ 核心脫落！請重新對準抓取",
         viewHint: "💡 360° 拖曳視角 / 雙指縮放觀察工業細節",
-        gripBtn: "抓取"
+        gripBtn: "抓取",
+        langBtn: "🌐 EN / 中文",
+        victoryTitle: "裝配任務圓滿達成",
+        victoryDesc: "量子能量核心已成功接入！實驗室能量網已滿載。",
+        timeLabel: "用時",
+        scoreLabel: "總分",
+        rankLabel: "評級",
+        retryBtn: "🔄 再玩一次",
+        shareBtn: "📤 分享戰績"
     },
     en: {
         title: "⚡ J.A.R. LAB // ARM-01",
@@ -22,7 +31,16 @@ export const I18N = {
         step2: "🟢 Press GRIP to capture!",
         step3: "➡️ Move towards the docking socket",
         step4: "✅ Release GRIP to dock!",
+        dropWarn: "⚠️ Core dropped! Re-align and grip again",
         viewHint: "💡 Drag to orbit 360° / Pinch to zoom industrial details",
-        gripBtn: "GRIP"
+        gripBtn: "GRIP",
+        langBtn: "🌐 中文 / EN",
+        victoryTitle: "MISSION ACCOMPLISHED",
+        victoryDesc: "Quantum Core online. Laboratory power fully restored.",
+        timeLabel: "TIME",
+        scoreLabel: "SCORE",
+        rankLabel: "RANK",
+        retryBtn: "🔄 REPLAY",
+        shareBtn: "📤 SHARE"
     }
 };
