@@ -19,24 +19,27 @@ export class InputMapper {
         POOL.forward.normalize();
         POOL.right.crossVectors(POOL.forward, camera.up).normalize().negate();
 
-        const moveSpeed = 2.2 * dt;
-        // 左搖桿：平面伸縮與平移
+        const moveSpeed = 2.4 * dt;
+
+        // 左搖桿：控制水平平移與前後伸縮
         POOL.v1.copy(POOL.forward).multiplyScalar(-this.ly * moveSpeed);
         POOL.v2.copy(POOL.right).multiplyScalar(this.lx * moveSpeed);
         targetPos.add(POOL.v1).add(POOL.v2);
 
-        // 右搖桿：垂直升降伸縮
+        // 右搖桿：控制垂直升降
         targetPos.y -= this.ry * moveSpeed;
 
-        // 解鎖更大伸縮範圍 (半徑 0.4m ~ 2.4m, 高度 0.15m ~ 2.8m)
-        targetPos.y = Math.max(0.15, Math.min(2.8, targetPos.y));
+        // 限制在可到達的物理空間 (貼近地面 0.18m 到 高處 2.2m)
+        targetPos.y = Math.max(0.18, Math.min(2.2, targetPos.y));
+
+        // 伸縮半徑 (最小 0.35m，最大 2.2m)
         const radius = Math.hypot(targetPos.x, targetPos.z);
-        if (radius > 2.4) {
-            targetPos.x = (targetPos.x / radius) * 2.4;
-            targetPos.z = (targetPos.z / radius) * 2.4;
-        } else if (radius < 0.3) {
-            targetPos.x = (targetPos.x / (radius || 1)) * 0.3;
-            targetPos.z = (targetPos.z / (radius || 1)) * 0.3;
+        if (radius > 2.2) {
+            targetPos.x = (targetPos.x / radius) * 2.2;
+            targetPos.z = (targetPos.z / radius) * 2.2;
+        } else if (radius < 0.35) {
+            targetPos.x = (targetPos.x / (radius || 1)) * 0.35;
+            targetPos.z = (targetPos.z / (radius || 1)) * 0.35;
         }
     }
 }
