@@ -12,7 +12,7 @@ import { ModelDropZone } from '../ugc/ModelDropZone.js';
 
 export class MainController {
     constructor(config, sceneManager, errorBoundary) {
-        // 支援 (sceneManager) 或 (config, sceneManager, errorBoundary) 雙重重載
+        // 支援 (sceneManager) 或 (config, sceneManager, errorBoundary) 靈活注入
         if (config && config.scene && config.camera) {
             this.sceneMgr = config;
             this.config = null;
@@ -31,7 +31,7 @@ export class MainController {
         this.targetPos = new THREE.Vector3(0, 1.9, 1.5);
         this.idleTime = 0;
 
-        // 注入基礎子系統 (安全取用 SceneManager 內部屬性)
+        // 注入基礎子系統 (防禦性獲取 scene 與 camera)
         this.audio = new AudioEngine();
         this.inputMapper = new InputMapper(this.config);
         this.hud = new HUDManager(this.config);
@@ -48,7 +48,7 @@ export class MainController {
 
     init() {
         try {
-            // 1. 初始化 360° 軌道控制器 (支援多角度觀察)
+            // 1. 初始化 360° 軌道控制器 (並限制觸控穿透)
             if (typeof THREE.OrbitControls !== 'undefined') {
                 this.controls = new THREE.OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
                 this.controls.enableDamping = true;
@@ -77,7 +77,7 @@ export class MainController {
             // 4. HUD 初始化
             this.hud.init(this.mission, this.armData);
 
-            // 5. 綁定雙搖桿與夾爪控制 (觸控互斥保護)
+            // 5. 綁定雙搖桿與夾爪控制 (解決觸控衝突)
             JoystickManager.init(
                 (x, y) => {
                     this.inputMapper.setTranslation(x, y);
@@ -112,13 +112,13 @@ export class MainController {
      * 即時切換雙語 (zh / en)
      */
     setLanguage(lang) {
-        if (this.config && this.config.setLang) {
+        if (this.config?.setLang) {
             this.config.setLang(lang);
         }
-        if (this.hud && this.hud.updateLanguage) {
+        if (this.hud?.updateLanguage) {
             this.hud.updateLanguage(lang, this.mission);
         }
-        if (this.mission && this.mission.setLanguage) {
+        if (this.mission?.setLanguage) {
             this.mission.setLanguage(lang);
         }
     }
@@ -128,12 +128,12 @@ export class MainController {
         this.rafId = requestAnimationFrame(() => this.animate());
 
         const rawDt = Math.min(this.clock.getDelta(), 0.05);
-        const timeScale = this.mission ? (this.mission.timeScale || 1.0) : 1.0;
+        const timeScale = this.mission?.timeScale || 1.0;
         const dt = rawDt * timeScale;
         const camera = this.sceneMgr.camera;
         this.idleTime += dt;
 
-        // 1. 機械臂待機微動作 (修正累加漂移問題)
+        // 1. 機械臂待機微動作 (安全正弦波微幅浮動，杜絕持續累加漂移)
         const intensity = this.inputMapper.getIntensity();
         if (intensity < 0.01 && !this.mission.isSecured && !this.mission.isIgniting) {
             const idleOffset = Math.sin(this.idleTime * 1.8) * 0.003;
@@ -155,7 +155,7 @@ export class MainController {
         // 5. 任務狀態、磁吸與點火序列
         this.mission.update(dt, this.targetPos);
 
-        // 6. 阻尼 CCD-IK 逆運動學解算 (帶預設回退安全值)
+        // 6. 阻尼 CCD-IK 逆運動學解算 (帶安全回退值)
         const ikIterations = this.config?.get?.('ik.iterations') || 3;
         const ikDamping = this.config?.get?.('ik.damping') || 0.7;
         CCDIKSolver.solve(
@@ -232,7 +232,7 @@ export class MainController {
             targetMesh.add(customMesh);
             this.currentCustomMesh = customMesh;
 
-            this.inputMapper.setPayload(physics.mass > 0.5);
+            this.inputMapper.setPayload?.(physics.mass > 0.5);
             this.hud.updateStatus('UGC_MODEL_LOADED');
         }
     }
@@ -242,7 +242,7 @@ export class MainController {
         if (this.rafId) cancelAnimationFrame(this.rafId);
 
         if (this.controls) this.controls.dispose();
-        this.sceneMgr.dispose();
+        this.sceneMgr.dispose?.();
         this.audio.dispose?.();
         this.hud.dispose?.();
         this.fx.dispose?.();
