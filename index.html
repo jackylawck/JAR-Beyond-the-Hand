@@ -67,7 +67,7 @@
     <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
     <link rel="apple-touch-icon" href="jarBeyondtheHand192icon.png">
 
-    <!-- 🌟 統一 ES Module 映射 (徹底解決 OrbitControls 與多實例衝突) -->
+    <!-- 🌟 Import Map 模組路徑映射 -->
     <script type="importmap">
     {
       "imports": {
@@ -78,21 +78,6 @@
     </script>
 </head>
 <body>
-    <!-- 📲 手機「加至主畫面」一鍵提示橫幅 -->
-    <div id="pwa-install-banner" style="display:none; position:fixed; top:12px; left:50%; transform:translateX(-50%); width:90%; max-width:380px; background:rgba(4,14,28,0.92); border:1px solid #00e5ff; border-radius:10px; padding:10px 16px; z-index:200; box-shadow:0 4px 25px rgba(0,229,255,0.25); backdrop-filter:blur(10px); align-items:center; justify-content:space-between;">
-        <div style="display:flex; align-items:center; gap:10px;">
-            <div style="width:36px; height:36px; border-radius:6px; background:#00e5ff; display:flex; align-items:center; justify-content:center; font-size:18px;">🦾</div>
-            <div>
-                <div style="color:#fff; font-size:12px; font-weight:bold;">安裝 J.A.R. 機械臂 App</div>
-                <div style="color:#8899aa; font-size:10px;">加入手機主畫面，全螢幕沉浸體驗</div>
-            </div>
-        </div>
-        <div style="display:flex; gap:6px;">
-            <button id="btn-pwa-install" style="background:#00e5ff; border:none; color:#030712; font-size:11px; font-weight:bold; padding:6px 12px; border-radius:5px; cursor:pointer;">安裝</button>
-            <button id="btn-pwa-close" style="background:transparent; border:none; color:#8899aa; font-size:14px; cursor:pointer;">✕</button>
-        </div>
-    </div>
-
     <!-- 彈出式模式切換選單 -->
     <div id="mode-selector" style="display:none; position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.88); backdrop-filter:blur(15px); flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.3s;">
         <h2 style="color:#00e5ff; font-size:24px; letter-spacing:3px; font-weight:800; margin-bottom: 5px;">⚡ 切換任務模式</h2>
@@ -174,36 +159,6 @@
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
-
-    <script>
-        let deferredPrompt;
-        const banner = document.getElementById('pwa-install-banner');
-        const installBtn = document.getElementById('btn-pwa-install');
-        const closeBtn = document.getElementById('btn-pwa-close');
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault();
-            deferredPrompt = e;
-            if (banner) banner.style.display = 'flex';
-        });
-
-        if (installBtn) {
-            installBtn.addEventListener('click', async () => {
-                if (deferredPrompt) {
-                    deferredPrompt.prompt();
-                    const { outcome } = await deferredPrompt.userChoice;
-                    deferredPrompt = null;
-                    if (banner) banner.style.display = 'none';
-                }
-            });
-        }
-
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                if (banner) banner.style.display = 'none';
-            });
-        }
-    </script>
 
     <script type="module" src="src/main.js"></script>
 </body>
