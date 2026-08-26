@@ -37,7 +37,7 @@ export class HUDManager {
                 </div>
                 <div class="header-right">
                     <span class="fps-tag" id="hud-fps">60 FPS</span>
-                    <button class="toggle-collapse-btn" id="btn-collapse" title="折疊/展開">◀</button>
+                    <button class="toggle-collapse-btn" id="btn-collapse" title="折疊/展開">◀ 收起</button>
                 </div>
             </div>
             
@@ -109,17 +109,16 @@ export class HUDManager {
             txtExport: document.getElementById('txt-export'),
             statusBar: document.getElementById('txt-status-bar'),
             
-            // 頂部導航與外部 HUD
-            appTitle: document.querySelector('.hud-title'),
+            // 外部 HUD
+            appTitle: document.getElementById('app-hud-title'),
             btnSwitchMode: document.getElementById('btn-switch-mode'),
             btnLang: document.getElementById('lang-btn'),
             statusTag: document.getElementById('status-tag'),
             missionTitle: document.getElementById('mission-title'),
             missionDesc: document.getElementById('mission-desc'),
             viewHint: document.getElementById('view-hint'),
-            jarTitleSpan: document.querySelector('#jar-title span:first-child'),
-            jarStatusSpan: document.querySelector('#jar-title span:last-child'),
-            jarText: document.getElementById('jar-text')
+            jarTitleText: document.getElementById('jar-title-text'),
+            jarStatusTag: document.getElementById('jar-status-tag')
         };
     }
 
@@ -130,7 +129,12 @@ export class HUDManager {
             e.stopPropagation();
             this.isCollapsed = !this.isCollapsed;
             this.dom.panel.classList.toggle('collapsed', this.isCollapsed);
-            this.dom.collapseBtn.innerText = this.isCollapsed ? '▼' : '◀';
+            const isEn = (this.lang === 'en');
+            if (this.isCollapsed) {
+                this.dom.collapseBtn.innerText = isEn ? '▶ Show' : '▼ 展開';
+            } else {
+                this.dom.collapseBtn.innerText = isEn ? '◀ Hide' : '◀ 收起';
+            }
         };
 
         this.dom.toggleBtn.addEventListener('click', toggle);
@@ -157,7 +161,7 @@ export class HUDManager {
         const t = I18N[lang];
         if (!t || !this.dom.modeTitle) return;
 
-        // 頂部導航與標題
+        // 頂部導航
         if (this.dom.appTitle) this.dom.appTitle.innerText = t.appTitle;
         if (this.dom.btnSwitchMode) this.dom.btnSwitchMode.innerText = t.switchMode;
         if (this.dom.btnLang) this.dom.btnLang.innerText = t.langBtn;
@@ -182,7 +186,7 @@ export class HUDManager {
             if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionResDesc;
         }
 
-        // 遙測標籤翻譯
+        // 遙測標籤
         this.dom.lblRadius.innerText = `${t.labelRadius}:`;
         this.dom.lblError.innerText = `${t.labelError}:`;
         this.dom.lblPayload.innerText = `${t.labelPayload}:`;
@@ -192,9 +196,36 @@ export class HUDManager {
         this.dom.txtExport.innerText = t.btnExportCsv;
         this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
 
-        // J.A.R. 助理標題與狀態
-        if (this.dom.jarTitleSpan) this.dom.jarTitleSpan.innerText = t.jarTitle;
-        if (this.dom.jarStatusSpan) this.dom.jarStatusSpan.innerText = t.jarStatus;
+        if (this.dom.collapseBtn) {
+            this.dom.collapseBtn.innerText = this.isCollapsed 
+                ? (lang === 'en' ? '▶ Show' : '▼ 展開') 
+                : (lang === 'en' ? '◀ Hide' : '◀ 收起');
+        }
+
+        // J.A.R. 助理視窗
+        if (this.dom.jarTitleText) this.dom.jarTitleText.innerText = t.jarTitle;
+        if (this.dom.jarStatusTag) this.dom.jarStatusTag.innerText = t.jarStatus;
+
+        // 模式切換彈窗
+        const modalTitle = document.getElementById('modal-title');
+        const modalDesc = document.getElementById('modal-desc');
+        const modalClose = document.getElementById('btn-close-modal');
+        const kTitle = document.getElementById('mode-opt-kid-title');
+        const kDesc = document.getElementById('mode-opt-kid-desc');
+        const aTitle = document.getElementById('mode-opt-adv-title');
+        const aDesc = document.getElementById('mode-opt-adv-desc');
+        const rTitle = document.getElementById('mode-opt-res-title');
+        const rDesc = document.getElementById('mode-opt-res-desc');
+
+        if (modalTitle) modalTitle.innerText = t.modalTitle;
+        if (modalDesc) modalDesc.innerText = t.modalDesc;
+        if (modalClose) modalClose.innerText = t.modalClose;
+        if (kTitle) kTitle.innerText = t.modeKidTitle;
+        if (kDesc) kDesc.innerText = t.modeKidDesc;
+        if (aTitle) aTitle.innerText = t.modeAdvTitle;
+        if (aDesc) aDesc.innerText = t.modeAdvDesc;
+        if (rTitle) rTitle.innerText = t.modeResTitle;
+        if (rDesc) rDesc.innerText = t.modeResDesc;
     }
 
     update(targetPos, armData, mission, intensity, jointAngles, torques) {
