@@ -1,8 +1,10 @@
 import { POOL } from '../core/Pool.js';
 
 export class CCDIKSolver {
-    static solve(ikBones, endEffector, target) {
-        for (let iter = 0; iter < 3; iter++) {
+    static solve(ikBones, endEffector, target, iterations = 3, damping = 0.4) {
+        const maxDelta = 0.12;
+
+        for (let iter = 0; iter < iterations; iter++) {
             for (let i = ikBones.length - 1; i >= 0; i--) {
                 const bone = ikBones[i];
                 bone.obj.getWorldPosition(POOL.v1);
@@ -17,8 +19,8 @@ export class CCDIKSolver {
                 if (angle > 0.001) {
                     POOL.cross.crossVectors(POOL.toEnd, POOL.toTarget).normalize();
                     const currentRot = (bone.axis === 'Y') ? bone.obj.rotation.y : bone.obj.rotation.x;
-                    let targetDelta = (bone.axis === 'Y' ? POOL.cross.y : POOL.cross.x) * angle * 0.7;
-                    targetDelta = Math.max(-0.12, Math.min(0.12, targetDelta));
+                    let targetDelta = (bone.axis === 'Y' ? POOL.cross.y : POOL.cross.x) * angle * (1.0 - damping * 0.5);
+                    targetDelta = Math.max(-maxDelta, Math.min(maxDelta, targetDelta));
                     const nextRot = Math.max(bone.min, Math.min(bone.max, currentRot + targetDelta));
 
                     if (bone.axis === 'Y') bone.obj.rotation.y = nextRot;
