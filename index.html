@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J.A.R. 職業模擬器 ｜ Beyond the Hand 3D</title>
+    <title>J.A.R. 在手之上 3D ｜ Beyond the Hand</title>
     <link rel="stylesheet" href="css/style.css">
     
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -20,7 +20,7 @@
 <body>
     <!-- 模式選擇 -->
     <div id="mode-selector" style="position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.95); backdrop-filter:blur(20px); display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.6s;">
-        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:4px; font-weight:800; margin-bottom: 5px;">⚡ J.A.R. 工業模擬器</h1>
+        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:4px; font-weight:800; margin-bottom: 5px;">⚡ J.A.R. 在手之上 3D</h1>
         <p style="color:#8899aa; margin-bottom:30px;">請選擇你的自動化任務領域</p>
         <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
             <div class="mode-card" data-mode="kid" style="background:rgba(0,229,255,0.05); border:2px solid rgba(0,229,255,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
@@ -36,6 +36,7 @@
                 <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">實驗室自動化</p>
             </div>
         </div>
+        <p style="color:#556677; font-size:11px; margin-top:30px; font-family:monospace;">支援 PC 操作：W/A/S/D 移動，Q/E 升降，SPACE 抓取</p>
     </div>
 
     <!-- 任務簡報覆蓋層 -->
@@ -47,27 +48,42 @@
         </div>
     </div>
 
-    <!-- 任務結算覆蓋層 -->
+    <!-- 認證戰績卡 -->
     <div id="result-overlay" style="display:none; position:absolute; z-index:95; width:100%; height:100%; background:rgba(0,0,0,0.85); display:flex; flex-direction:column; justify-content:center; align-items:center;">
-        <div style="border:2px solid #ff9100; border-radius:12px; padding:40px; text-align:center; background:rgba(20,10,4,0.95); box-shadow:0 0 40px rgba(255,145,0,0.3);">
-            <h1 id="result-title" style="color:#fff; font-size:32px; margin-bottom:15px;">任務完成！</h1>
-            <div style="font-size:64px; font-weight:900; margin:10px 0; text-shadow:0 0 20px;" id="result-rank">S</div>
-            <p style="color:#aaa; font-size:14px; margin-bottom:5px;">耗時：<span id="result-time" style="color:#fff;">0</span> 秒</p>
-            <p style="color:#aaa; font-size:14px; margin-bottom:15px;">失誤：<span id="result-mistakes" style="color:#fff;">0</span> 次</p>
-            
-            <!-- 🌟 結算成就解鎖提示 -->
-            <p id="result-achievement" style="color:#eab308; font-weight:bold; font-size:16px; margin-bottom:25px; text-shadow: 0 0 10px rgba(234,179,8,0.5);"></p>
-            
-            <button id="btn-restart" style="background:#ff9100; border:none; color:#fff; padding:10px 24px; font-size:16px; border-radius:6px; cursor:pointer; font-weight:bold;">返回主選單</button>
+        <div id="share-card" style="border:2px solid #ff9100; border-radius:12px; padding:40px; text-align:center; background:rgba(20,10,4,0.95); box-shadow:0 0 40px rgba(255,145,0,0.3); width: 320px; position:relative; overflow:hidden;">
+            <div style="position:absolute; top:-20px; right:-20px; font-size:80px; opacity:0.05; color:#fff;">J.A.R.</div>
+            <h1 id="result-title" style="color:#fff; font-size:28px; margin-bottom:10px; letter-spacing:1px;">任務完成！</h1>
+            <div style="font-size:72px; font-weight:900; margin:5px 0; text-shadow:0 0 25px;" id="result-rank">S</div>
+            <div style="background:rgba(255,255,255,0.05); padding:15px; border-radius:8px; margin-bottom:20px;">
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="color:#aaa; font-size:14px;">耗時：</span><span id="result-time" style="color:#fff; font-weight:bold;">0 秒</span>
+                </div>
+                <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                    <span style="color:#aaa; font-size:14px;">失誤：</span><span id="result-mistakes" style="color:#fff; font-weight:bold;">0 次</span>
+                </div>
+                <div style="display:flex; justify-content:space-between;">
+                    <span style="color:#aaa; font-size:14px;">認證碼：</span><span id="result-hash" style="color:#00e5ff; font-family:monospace; font-weight:bold;">JAR-8821</span>
+                </div>
+            </div>
+            <p id="result-achievement" style="color:#eab308; font-weight:bold; font-size:14px; margin-bottom:20px; text-shadow: 0 0 10px rgba(234,179,8,0.5);"></p>
+            <p style="color:#556677; font-size:10px; margin-bottom:20px;">長按或截圖分享您的 J.A.R. 認證卡</p>
+            <button id="btn-restart" style="background:#ff9100; border:none; color:#fff; padding:12px 24px; font-size:16px; border-radius:6px; cursor:pointer; font-weight:bold; width:100%; box-shadow:0 4px 15px rgba(255,145,0,0.4);">返回主選單</button>
         </div>
+    </div>
+
+    <!-- J.A.R. AI 對話視窗 -->
+    <div id="jar-dialogue" style="display:none; position:absolute; bottom:130px; left:50%; transform:translateX(-50%); background:rgba(4,12,24,0.85); border:1px solid #00e5ff; border-left:4px solid #00e5ff; border-radius:6px; padding:12px 20px; width:85%; max-width:400px; z-index:80; backdrop-filter:blur(6px); box-shadow: 0 4px 20px rgba(0,229,255,0.2);">
+        <div id="jar-title" style="color:#00e5ff; font-weight:bold; font-size:11px; margin-bottom:6px; letter-spacing:1px; display:flex; justify-content:space-between;">
+            <span>J.A.R. 系統助理</span><span id="jar-status">在線</span>
+        </div>
+        <div id="jar-text" style="color:#fff; font-size:14px; font-family:-apple-system, monospace; min-height:42px; line-height:1.4;">...</div>
     </div>
 
     <div id="canvas-container"></div>
     
-    <!-- 全息 HUD -->
     <div id="hud">
         <div class="hud-header">
-            <div class="hud-title">⚡ J.A.R. LAB // ARM-01</div>
+            <div class="hud-title">⚡ J.A.R. 在手之上 3D // ARM-01</div>
             <div class="header-controls">
                 <button id="lang-btn" class="lang-btn">🌐 EN / 中文</button>
                 <div id="status-tag" class="hud-status">系統就緒</div>
@@ -81,7 +97,6 @@
         <div></div>
     </div>
 
-    <!-- 虛擬雙搖桿與動作按鈕 -->
     <div class="controls-overlay">
         <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
