@@ -64,12 +64,9 @@ We warmly invite friends, educators, and robotics enthusiasts to step into the s
 * **Nonlinear Soft Clamping**: Replaces abrupt angular clipping with boundary deceleration curves, preventing numerical jitter near joint physical limits.
 * **Static Joint Torque Estimation ($\tau_i$)**: Computes real-time gravitational and payload torque distribution ($N \cdot m$) across all joints.
 
-
 * **🔬 Research-Grade Telemetry & Data Acquisition**:
 * **6-DoF Telemetry & CSV Export**: Real-time logging of timestamps, Cartesian coordinates, joint angles, torques, tracking errors, and power consumption for direct MATLAB/Python workflow integration.
 * **64-Point Sliding FFT Spectrum**: Dynamic frequency-domain modal decomposition detecting primary resonance peaks (0–30 Hz).
-* **Uncertainty Quantification**: Real-time tracking error evaluation reporting sample mean, standard deviation, and 95% confidence intervals ($\text{Mean} \pm \text{CI}_{95\%}$).
-
 
 * **🕹️ Responsive Control Architecture**:
 * **Unified Pointer Events API**: Seamless cross-device support for mouse, multi-touch, and stylus input with Pointer Capture tracking.
@@ -77,18 +74,14 @@ We warmly invite friends, educators, and robotics enthusiasts to step into the s
 * **Soft-Blend Hybrid Input**: Smooth weighted transition between keyboard (WASD/QE) and virtual analog joysticks without abrupt step inputs.
 * **Threshold Haptic Feedback**: Native micro-vibrations triggered upon crossing deadzones, reaching physical motion limits, and activating pneumatic grippers.
 
-
 * **⚡ 60FPS Zero-GC Runtime**:
 * Elimination of dynamic heap allocations and temporary object creation inside the simulation pipeline via pre-allocated matrix/vector pools (`Pool.js`).
 * Prevents JavaScript Garbage Collection pauses, ensuring a continuous 60FPS refresh rate on mobile and embedded devices.
-
 
 * **🎨 Holographic HUD, Multi-Tier Scenarios & i18n**:
 * **Three Progressive Operational Tiers**: 🌱 Agricultural Harvesting, 🏭 Industrial Line Assembly, and 🧪 Cleanroom Research Automation.
 * **Holographic Visual Design**: CSS Design Tokens, dynamic scanline overlays, breathing neon borders, and golden S-rank celebration FX.
 * **Live Dual-Language Localization**: Instant hot-swapping between Traditional Chinese (繁中) and English across all UI modules.
-
-
 
 ---
 
@@ -99,11 +92,6 @@ JAR-Beyond-the-Hand/
 ├── index.html                # 應用程式入口、PWA 配置、全息 HUD 與 Import Map / App Entry & HUD
 ├── manifest.json             # PWA 行動裝置安裝設定檔 / PWA Manifest
 ├── LICENSE                   # MIT 開源授權條款 / Open Source License
-├── CITATION.cff              # 學術引用規範定義文件 / Citation Metadata
-├── CONTRIBUTING.md           # 開源貢獻與學術複現規範 / Contribution Guidelines
-├── CODE_OF_CONDUCT.md        # 開源社群行為準則 / Community Code of Conduct
-├── paper/
-│   └── paper.md              # JOSS (Journal of Open Source Software) 論文草稿 / JOSS Paper Draft
 ├── css/
 │   └── style.css             # 全息 HUD 樣式、全屏掃描線與響應式雙搖桿佈局 / Styles & RWD Tokens
 └── src/
