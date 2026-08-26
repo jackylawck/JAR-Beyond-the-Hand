@@ -18,7 +18,7 @@ export class MainController {
         this.isRunning = false;
         this.rafId = null;
 
-        // Zero-Allocation 目標位置
+        // Zero-Allocation 目標位置 (IK Target)
         this.targetPos = new THREE.Vector3(0, 1.8, 1.6);
 
         // 注入基礎子系統
@@ -27,17 +27,30 @@ export class MainController {
         this.hud = new HUDManager(config);
         this.fx = new ImpactFXManager(this.scene.scene, this.scene.camera);
 
+        // 核心組件實例
         this.armData = null;
         this.mission = null;
         this.dropZone = null;
+        this.controls = null; // 360° 視角控制器
     }
 
     init() {
         try {
-            // 1. 構建機械臂與場景
+            // 1. 初始化 360° 軌道控制器 (支援多角度滑動觀察)
+            if (typeof THREE.OrbitControls !== 'undefined') {
+                this.controls = new THREE.OrbitControls(this.scene.camera, this.scene.renderer.domElement);
+                this.controls.enableDamping = true;
+                this.controls.dampingFactor = 0.08;
+                this.controls.target.set(0, 1.0, 0.5);
+                this.controls.maxPolarAngle = Math.PI / 2 + 0.05; // 避免穿透地台底部
+                this.controls.minDistance = 2.0;
+                this.controls.maxDistance = 10.0;
+            }
+
+            // 2. 構建機械臂與場景
             this.armData = ArmBuilder.build(this.scene.scene);
 
-            // 2. 任務管理器 (注入音效、特效、輸入映射及環境點光源)
+            // 3. 任務管理器 (注入音效、特效、輸入映射及點光源)
             this.mission = new MissionManager(
                 this.armData.endEffector,
                 this.armData.reactorCore,
@@ -49,24 +62,24 @@ export class MainController {
                 this.armData.labLight || null
             );
 
-            // 3. HUD 初始化
+            // 4. HUD 初始化
             this.hud.init(this.mission, this.armData);
 
-            // 4. 綁定雙搖桿與夾爪控制
+            // 5. 綁定雙搖桿與夾爪控制
             JoystickManager.init(
                 (x, y) => this.inputMapper.setTranslation(x, y),
                 (x, y) => this.inputMapper.setRotation(x, y),
                 () => this.mission.toggleGrip()
             );
 
-            // 5. 科研/創客模式：掛載 UGC 3D 列印 STL 拖拽介面
+            // 6. 科研/創客模式：掛載 UGC 3D 列印 STL 拖拽介面
             if (this.config.getLevel() === 'research' || this.config.get('ugc.enabled')) {
                 this.dropZone = new ModelDropZone((modelData) => {
                     this._handleUGCModel(modelData);
                 });
             }
 
-            // 6. 啟動主渲染迴圈
+            // 7. 啟動主渲染迴圈
             this.isRunning = true;
             this.animate();
             this.hud.updateStatus('statusReady');
@@ -74,6 +87,18 @@ export class MainController {
         } catch (error) {
             console.error('[MainController] 初始化失敗:', error);
             if (this.errorBoundary) this.errorBoundary._renderError(`Init Failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * 即時切換雙語 (zh / en)
+     */
+    setLanguage(lang) {
+        if (this.config.setLang) {
+            this.config.setLang(lang);
+        }
+        if (this.hud && this.hud.updateLanguage) {
+            this.hud.updateLanguage(lang, this.mission);
         }
     }
 
@@ -87,13 +112,13 @@ export class MainController {
         const dt = rawDt * timeScale;
         const camera = this.scene.camera;
 
-        // 1. 核心呼吸光動畫 (Environmental Storytelling)
+        // 1. 核心呼吸發光動畫
         if (this.armData.coreGlow) {
             const pulse = 1.0 + Math.sin(Date.now() * 0.005) * 0.15;
             this.armData.coreGlow.scale.set(pulse, pulse, pulse);
         }
 
-        // 2. 操控映射 (含慣性與負載阻尼)
+        // 2. 操控映射 (基於當前視角前後左右平移)
         this.inputMapper.update(this.targetPos, dt, camera);
 
         // 3. 任務狀態、磁吸與點火序列
@@ -111,7 +136,7 @@ export class MainController {
         // 5. 夾爪開合插值動畫
         this._updateGripper();
 
-        // 6. 電影級相機動態跟隨 (含點火全景 Wide Shot)
+        // 6. 相機視角更新 (點火時全景鏡頭，其餘時間允許玩家 360° 旋轉視角)
         this._updateCamera(rawDt, camera);
 
         // 7. 特效與震屏
@@ -138,10 +163,9 @@ export class MainController {
     }
 
     _updateCamera(dt, camera) {
-        const cfg = this.config.get('camera');
-
-        // 點火過渡儀式：相機平滑拉遠至全景展示 (Wide Shot)
+        // 點火儀式過渡：相機自動拉遠至全景展示 (Ignition Wide Shot)
         if (this.mission && this.mission.isIgniting) {
+            if (this.controls) this.controls.enabled = false;
             POOL.camTargetPos.set(0, 4.5, 6.2);
             camera.position.lerp(POOL.camTargetPos, 2.0 * dt);
             POOL.camLook.set(0, 1.2, 0.4);
@@ -149,25 +173,14 @@ export class MainController {
             return;
         }
 
-        // 一般跟隨：基於末端世界坐標
-        this.armData.endEffector.getWorldPosition(POOL.v1);
-        POOL.camTargetPos.set(
-            POOL.v1.x * cfg.posWeight,
-            cfg.heightOffset + POOL.v1.y * 0.25,
-            cfg.depthOffset + POOL.v1.z * 0.2
-        );
-        camera.position.lerp(POOL.camTargetPos, cfg.smoothness * dt);
-
-        POOL.camLook.set(
-            POOL.v1.x * cfg.lookAtWeight,
-            cfg.lookAtYOffset + POOL.v1.y * 0.2,
-            0.5
-        );
-        camera.lookAt(POOL.camLook);
+        // 平時啟用 OrbitControls，允許用戶手指/滑鼠自由拖曳旋轉多角度觀察
+        if (this.controls) {
+            this.controls.enabled = true;
+            this.controls.update();
+        }
     }
 
     _handleUGCModel(modelData) {
-        // 自訂 STL 模型裝配與慣量即時更新
         const { slot, geometry, physics } = modelData;
         const targetMesh = (slot === 'claw') ? this.armData.endEffector : this.armData.ikBones[2].obj;
 
@@ -186,6 +199,7 @@ export class MainController {
         this.isRunning = false;
         if (this.rafId) cancelAnimationFrame(this.rafId);
 
+        if (this.controls) this.controls.dispose();
         this.scene.dispose();
         this.audio.dispose?.();
         this.hud.dispose?.();
