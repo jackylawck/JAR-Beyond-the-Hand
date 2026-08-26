@@ -3,101 +3,591 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="theme-color" content="#00e5ff">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="在手之上">
-    <title>J.A.R. 在手之上 3D ｜ ARM-01 機械臂手遊</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="stylesheet" href="css/style.css">
+    <title>J.A.R. 在手之上 3D ｜ Beyond the Hand 3D</title>
+    <style>
+        * { box-sizing: border-box; user-select: none; -webkit-user-select: none; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100%; overflow: hidden; background: #040810; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        #canvas-container {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0;
+            touch-action: none;
+        }
+
+        /* 全息 HUD 層 */
+        #hud {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column; justify-content: space-between;
+            padding: 16px; color: #00e5ff; text-shadow: 0 0 10px rgba(0, 229, 255, 0.7);
+        }
+        .hud-header { display: flex; justify-content: space-between; align-items: center; }
+        .hud-title { font-size: 16px; font-weight: 800; letter-spacing: 2px; }
+        
+        .header-controls { display: flex; gap: 8px; pointer-events: auto; }
+        .lang-btn {
+            background: rgba(0, 229, 255, 0.15); border: 1px solid #00e5ff;
+            color: #00e5ff; font-size: 11px; font-weight: bold; padding: 4px 10px;
+            border-radius: 4px; cursor: pointer; transition: 0.2s;
+        }
+        .lang-btn:active { background: #00e5ff; color: #040810; }
+
+        .hud-status {
+            font-size: 11px; background: rgba(0, 229, 255, 0.12); border: 1px solid #00e5ff;
+            padding: 4px 10px; border-radius: 4px;
+        }
+
+        .mission-card {
+            background: rgba(4, 12, 24, 0.85); border-left: 3px solid #ff9100;
+            padding: 10px 14px; border-radius: 0 8px 8px 0; max-width: 340px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6); backdrop-filter: blur(6px);
+            pointer-events: auto;
+        }
+        .mission-title { color: #ff9100; font-size: 11px; font-weight: bold; letter-spacing: 1px; }
+        .mission-desc { font-size: 13px; color: #fff; margin-top: 3px; font-weight: 600; }
+        .view-hint { font-size: 10px; color: #8899aa; margin-top: 4px; }
+
+        /* 觸控與操控層 */
+        .controls-overlay {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+        }
+        .joystick-zone {
+            position: absolute; bottom: 25px; width: 130px; height: 130px;
+            background: radial-gradient(circle, rgba(0, 229, 255, 0.08), rgba(0, 229, 255, 0.01));
+            border: 1px dashed rgba(0, 229, 255, 0.4); border-radius: 50%;
+            pointer-events: auto; touch-action: none;
+        }
+        #joy-left { left: 25px; }
+        #joy-right { right: 25px; }
+        .joy-knob {
+            width: 46px; height: 46px; border-radius: 50%;
+            background: radial-gradient(circle, #00e5ff, #006b7a);
+            position: absolute; top: 42px; left: 42px; pointer-events: none;
+            box-shadow: 0 0 14px #00e5ff;
+        }
+        
+        .action-btn {
+            position: absolute; bottom: 175px; right: 35px; width: 68px; height: 68px;
+            border-radius: 50%; background: radial-gradient(circle, #ff3d00, #7a1200);
+            border: 2px solid #ff9100; color: #fff; font-weight: 800; font-size: 12px;
+            pointer-events: auto; display: flex; justify-content: center; align-items: center;
+            box-shadow: 0 0 18px rgba(255, 61, 0, 0.6); cursor: pointer;
+        }
+        .action-btn:active { transform: scale(0.92); }
+    </style>
+    <!-- Three.js + OrbitControls (支援視角多角度旋轉) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
-    <!-- 啟動過渡畫面 (J.A.R. 原創標識) -->
-    <div id="splash-screen">
-        <h1 class="splash-title">⚡ J.A.R. LAB</h1>
-        <p class="splash-sub">BEYOND THE HAND 3D</p>
-        <div class="splash-spinner"></div>
-        <p class="splash-status">INITIALIZING SYSTEMS...</p>
-    </div>
-
     <div id="canvas-container"></div>
 
-    <!-- 全息 HUD、進度條與引導 -->
     <div id="hud">
         <div class="hud-header">
             <div class="hud-title">⚡ J.A.R. LAB // ARM-01</div>
-            <div id="status-tag" class="hud-status">SYSTEM READY</div>
+            <div class="header-controls">
+                <button id="lang-toggle-btn" class="lang-btn">🌐 EN / 中文</button>
+                <div id="status-tag" class="hud-status">SYSTEM READY</div>
+            </div>
         </div>
         
         <div class="mission-card">
-            <div class="mission-title">MISSION 01: 量子核心裝配</div>
-            <div id="mission-guidance" class="mission-guidance-text">🎯 移向前方發光核心</div>
-            <div class="progress-bar-bg">
-                <div id="phase-progress-bar" class="progress-bar-fill"></div>
-            </div>
+            <div id="mission-header" class="mission-title">MISSION 01: 量子核心裝配</div>
+            <div id="mission-guidance" class="mission-desc">🎯 移向前方發光核心</div>
+            <div id="view-hint-text" class="view-hint">💡 提示：在空白區域滑動手指/滑鼠可 360° 旋轉多角度觀察</div>
         </div>
         <div></div>
     </div>
 
-    <!-- 虛擬雙搖桿與夾爪按鈕 -->
     <div class="controls-overlay">
         <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- 結算面板 (含評級與分享) -->
-    <div id="success-screen">
-        <div class="trophy-icon">🏆</div>
-        <h2 class="success-title">MISSION ACCOMPLISHED</h2>
-        <div id="new-record-badge" class="record-badge">NEW RECORD!</div>
-        
-        <div class="score-card">
-            <div><div class="score-label">用時</div><div id="final-time" class="score-val cyan">--</div></div>
-            <div><div class="score-label">總分</div><div id="final-score" class="score-val white">--</div></div>
-            <div><div class="score-label">評級</div><div id="final-rank" class="score-val green">S</div></div>
-        </div>
-
-        <div class="btn-group">
-            <button onclick="location.reload()" class="btn-action btn-cyan">🔄 再玩一次</button>
-            <button id="btn-share" class="btn-action btn-outline">📤 分享戰績</button>
-        </div>
-    </div>
-
     <script>
-        // 註冊 Service Worker
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+    /* =========================================================================
+       1. 雙語字典與配置 (i18n)
+       ========================================================================= */
+    const I18N = {
+        zh: {
+            title: "⚡ J.A.R. LAB // ARM-01",
+            statusReady: "系統就緒",
+            statusSecured: "核心已鎖定",
+            statusComplete: "裝配完成 🎉",
+            missionHeader: "MISSION 01: 量子核心裝配",
+            step1: "🎯 移向前方發光核心",
+            step2: "🟢 按下 GRIP 抓取！",
+            step3: "➡️ 移動至右側光圈基座",
+            step4: "✅ 釋放 GRIP 啟動點火！",
+            dropWarn: "⚠️ 核心脫落！請重新對準抓取",
+            viewHint: "💡 提示：在空白區域滑動手指/滑鼠可 360° 旋轉多角度觀察",
+            gripBtn: "抓取"
+        },
+        en: {
+            title: "⚡ J.A.R. LAB // ARM-01",
+            statusReady: "SYSTEM READY",
+            statusSecured: "CORE SECURED",
+            statusComplete: "MISSION COMPLETE 🎉",
+            missionHeader: "MISSION 01: QUANTUM CORE DOCKING",
+            step1: "🎯 Move towards the glowing core",
+            step2: "🟢 Press GRIP to capture!",
+            step3: "➡️ Move towards the right docking socket",
+            step4: "✅ Release GRIP to ignite reactor!",
+            dropWarn: "⚠️ Core dropped! Re-align and grip again",
+            viewHint: "💡 Tip: Drag on empty space to orbit & view from multiple angles",
+            gripBtn: "GRIP"
+        }
+    };
+
+    let currentLang = 'zh';
+
+    function updateLanguageUI() {
+        const dict = I18N[currentLang];
+        document.querySelector('.hud-title').innerText = dict.title;
+        document.getElementById('mission-header').innerText = dict.missionHeader;
+        document.getElementById('view-hint-text').innerText = dict.viewHint;
+        document.getElementById('btn-grip').innerText = dict.gripBtn;
+        document.getElementById('status-tag').innerText = isDelivered ? dict.statusComplete : (isSecured ? dict.statusSecured : dict.statusReady);
+    }
+
+    document.getElementById('lang-toggle-btn').addEventListener('click', (e) => {
+        e.stopPropagation();
+        currentLang = currentLang === 'zh' ? 'en' : 'zh';
+        updateLanguageUI();
+    });
+
+    /* =========================================================================
+       2. Web Audio 音效引擎
+       ========================================================================= */
+    class AudioEngine {
+        constructor() { this.ctx = null; this.motorGain = null; this.motorOsc = null; }
+        init() {
+            if (this.ctx) return;
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            this.ctx = new AudioCtx();
+            this.motorOsc = this.ctx.createOscillator();
+            this.motorGain = this.ctx.createGain();
+            this.motorOsc.type = 'triangle';
+            this.motorOsc.frequency.setValueAtTime(50, this.ctx.currentTime);
+            this.motorGain.gain.setValueAtTime(0, this.ctx.currentTime);
+            this.motorOsc.connect(this.motorGain);
+            this.motorGain.connect(this.ctx.destination);
+            this.motorOsc.start();
+        }
+        setMotorPitch(speed) {
+            if (!this.ctx) return;
+            this.motorGain.gain.setTargetAtTime(Math.min(speed * 0.12, 0.05), this.ctx.currentTime, 0.05);
+            this.motorOsc.frequency.setTargetAtTime(45 + speed * 100, this.ctx.currentTime, 0.05);
+        }
+        playPneumatic() {
+            if (!this.ctx) return;
+            const buffer = this.ctx.createBuffer(1, this.ctx.sampleRate * 0.08, this.ctx.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+            const noise = this.ctx.createBufferSource();
+            noise.buffer = buffer;
+            const filter = this.ctx.createBiquadFilter();
+            filter.type = 'bandpass'; filter.frequency.value = 2400;
+            const gain = this.ctx.createGain();
+            gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+            noise.connect(filter); filter.connect(gain); gain.connect(this.ctx.destination);
+            noise.start();
+        }
+        playSuccess() {
+            if (!this.ctx) return;
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, idx) => {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
+                gain.gain.setValueAtTime(0.15, this.ctx.currentTime + idx * 0.08);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.4);
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                osc.start(this.ctx.currentTime + idx * 0.08);
+                osc.stop(this.ctx.currentTime + idx * 0.08 + 0.4);
+            });
+        }
+    }
+
+    /* =========================================================================
+       3. 核心 3D 場景與機械臂建模 (Zero-Asset)
+       ========================================================================= */
+    const audio = new AudioEngine();
+    let scene, camera, renderer, controls;
+    let ikBones = [], targetPos = new THREE.Vector3(0, 1.8, 1.6);
+    let endEffector, clawLeft, clawRight;
+    let reactorCore, reactorSocket, coreGlow;
+    let clawOpen = true, isSecured = false, isDelivered = false;
+
+    const inputState = { lx: 0, ly: 0, rx: 0, ry: 0 };
+    const POOL = {
+        v1: new THREE.Vector3(), v2: new THREE.Vector3(),
+        forward: new THREE.Vector3(), right: new THREE.Vector3(),
+        toEnd: new THREE.Vector3(), toTarget: new THREE.Vector3(), cross: new THREE.Vector3()
+    };
+
+    function init() {
+        const container = document.getElementById('canvas-container');
+        
+        scene = new THREE.Scene();
+        scene.fog = new THREE.FogExp2(0x040810, 0.04);
+
+        camera = new THREE.PerspectiveCamera(48, window.innerWidth / window.innerHeight, 0.1, 100);
+        camera.position.set(0, 3.8, 5.2);
+
+        renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        container.appendChild(renderer.domElement);
+
+        // 🌟 啟用 OrbitControls 實現 360° 多角度自由環視
+        controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.08;
+        controls.target.set(0, 1.0, 0.5);
+        controls.maxPolarAngle = Math.PI / 2 + 0.05; // 避免穿透地台底部
+        controls.minDistance = 2.0;
+        controls.maxDistance = 10.0;
+
+        buildLighting();
+        buildEnvironment();
+        buildProceduralArm();
+        buildInteractiveObjects();
+        setupControls();
+
+        window.addEventListener('resize', onWindowResize, false);
+    }
+
+    function buildLighting() {
+        scene.add(new THREE.AmbientLight(0x507090, 1.2));
+        const dir = new THREE.DirectionalLight(0xffffff, 1.5);
+        dir.position.set(5, 10, 5);
+        scene.add(dir);
+
+        const point = new THREE.PointLight(0x00e5ff, 2.5, 12);
+        point.position.set(0, 3, 0);
+        scene.add(point);
+    }
+
+    function buildEnvironment() {
+        scene.add(new THREE.GridHelper(16, 32, 0x00e5ff, 0x112233));
+        const table = new THREE.Mesh(
+            new THREE.CylinderGeometry(2.5, 2.6, 0.2, 32),
+            new THREE.MeshStandardMaterial({ color: 0x151b24, roughness: 0.3, metalness: 0.8 })
+        );
+        table.position.y = 0.1;
+        scene.add(table);
+    }
+
+    function buildProceduralArm() {
+        const matGold = new THREE.MeshStandardMaterial({ color: 0xd4af37, metalness: 0.85, roughness: 0.25 });
+        const matRed = new THREE.MeshStandardMaterial({ color: 0x8b0000, metalness: 0.75, roughness: 0.3 });
+        const matJoint = new THREE.MeshStandardMaterial({ color: 0x222222, metalness: 0.9, roughness: 0.4 });
+        const matArc = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+
+        const baseGroup = new THREE.Group();
+        baseGroup.position.set(0, 0.2, 0);
+        scene.add(baseGroup);
+
+        const baseMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.6, 0.3, 24), matRed);
+        baseMesh.position.y = 0.15;
+        baseGroup.add(baseMesh);
+
+        // 關節 0: Base Yaw (水平旋轉)
+        const joint0 = new THREE.Group();
+        joint0.position.set(0, 0.3, 0);
+        baseGroup.add(joint0);
+        ikBones.push({ obj: joint0, axis: 'Y', min: -Math.PI, max: Math.PI });
+        joint0.add(new THREE.Mesh(new THREE.SphereGeometry(0.26, 16, 16), matJoint));
+
+        // 關節 1: Shoulder Pitch
+        const joint1 = new THREE.Group();
+        joint0.add(joint1);
+        ikBones.push({ obj: joint1, axis: 'X', min: -Math.PI * 0.45, max: Math.PI * 0.45 });
+
+        const upperArm = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.18, 1.2, 16), matGold);
+        upperArm.position.set(0, 0.6, 0);
+        joint1.add(upperArm);
+
+        // 關節 2: Elbow Pitch
+        joint1.add(new THREE.Mesh(new THREE.SphereGeometry(0.22, 16, 16), matJoint));
+        const joint2 = new THREE.Group();
+        joint2.position.set(0, 1.2, 0);
+        joint1.add(joint2);
+        ikBones.push({ obj: joint2, axis: 'X', min: -Math.PI * 0.75, max: 0.05 });
+
+        const foreArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.14, 1.0, 16), matRed);
+        foreArm.position.set(0, 0.5, 0);
+        joint2.add(foreArm);
+
+        // 關節 3: Wrist Pitch
+        const wristMesh = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.15, 16), matJoint);
+        wristMesh.position.set(0, 1.0, 0);
+        joint2.add(wristMesh);
+
+        const joint3 = new THREE.Group();
+        joint3.position.set(0, 1.0, 0);
+        joint2.add(joint3);
+        ikBones.push({ obj: joint3, axis: 'X', min: -Math.PI * 0.5, max: Math.PI * 0.5 });
+
+        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.2), matGold);
+        palm.position.set(0, 0.08, 0);
+        joint3.add(palm);
+
+        const palmArc = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.02, 16), matArc);
+        palmArc.rotation.x = Math.PI / 2;
+        palmArc.position.set(0, 0.08, 0.09);
+        joint3.add(palmArc);
+
+        const fingerGeo = new THREE.BoxGeometry(0.038, 0.28, 0.08);
+        clawLeft = new THREE.Mesh(fingerGeo, matGold);
+        clawLeft.position.set(-0.09, 0.2, 0);
+        joint3.add(clawLeft);
+
+        clawRight = new THREE.Mesh(fingerGeo, matGold);
+        clawRight.position.set(0.09, 0.2, 0);
+        joint3.add(clawRight);
+
+        endEffector = new THREE.Group();
+        endEffector.position.set(0, 0.34, 0);
+        joint3.add(endEffector);
+    }
+
+    function buildInteractiveObjects() {
+        // 目標基座槽位
+        reactorSocket = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.3, 0.32, 0.12, 24),
+            new THREE.MeshStandardMaterial({ color: 0x334455, metalness: 0.9 })
+        );
+        reactorSocket.position.set(0.75, 0.25, 0.75);
+        scene.add(reactorSocket);
+
+        const socketHole = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.18, 0.18, 0.14, 16),
+            new THREE.MeshBasicMaterial({ color: 0x001122 })
+        );
+        socketHole.position.set(0.75, 0.26, 0.75);
+        scene.add(socketHole);
+
+        // 量子核心
+        reactorCore = new THREE.Group();
+        const coreMesh = new THREE.Mesh(
+            new THREE.CylinderGeometry(0.15, 0.15, 0.18, 16),
+            new THREE.MeshStandardMaterial({ color: 0xeeeeee, metalness: 0.9 })
+        );
+        coreGlow = new THREE.Mesh(
+            new THREE.TorusGeometry(0.11, 0.03, 8, 24),
+            new THREE.MeshBasicMaterial({ color: 0x00ffff })
+        );
+        coreGlow.rotation.x = Math.PI / 2;
+        reactorCore.add(coreMesh);
+        reactorCore.add(coreGlow);
+        reactorCore.position.set(-0.75, 0.3, 0.85);
+        scene.add(reactorCore);
+    }
+
+    /* =========================================================================
+       4. 操控、逆運動學與任務邏輯
+       ========================================================================= */
+    function setupControls() {
+        bindJoy('joy-left', 'knob-left', (x, y) => { inputState.lx = x; inputState.ly = y; });
+        bindJoy('joy-right', 'knob-right', (x, y) => { inputState.rx = x; inputState.ry = y; });
+        document.getElementById('btn-grip').addEventListener('pointerdown', (e) => {
+            e.stopPropagation();
+            toggleGrip();
+        });
+    }
+
+    function bindJoy(zoneId, knobId, onChange) {
+        const zone = document.getElementById(zoneId);
+        const knob = document.getElementById(knobId);
+        const maxR = 45;
+        let activeId = null;
+
+        zone.addEventListener('pointerdown', (e) => {
+            audio.init();
+            activeId = e.pointerId;
+            zone.setPointerCapture(e.pointerId);
+            update(e);
+        });
+        zone.addEventListener('pointermove', (e) => { if (e.pointerId === activeId) update(e); });
+        const reset = (e) => {
+            if (e.pointerId === activeId) {
+                activeId = null;
+                knob.style.transform = `translate(0, 0)`;
+                onChange(0, 0);
+            }
+        };
+        zone.addEventListener('pointerup', reset);
+        zone.addEventListener('pointercancel', reset);
+
+        function update(e) {
+            const rect = zone.getBoundingClientRect();
+            let dx = e.clientX - (rect.left + rect.width / 2);
+            let dy = e.clientY - (rect.top + rect.height / 2);
+            const dist = Math.hypot(dx, dy);
+            if (dist > maxR) { dx = (dx / dist) * maxR; dy = (dy / dist) * maxR; }
+            knob.style.transform = `translate(${dx}px, ${dy}px)`;
+            const nx = dx / maxR, ny = dy / maxR;
+            const dz = 0.12;
+            const fx = Math.abs(nx) < dz ? 0 : Math.sign(nx) * Math.pow((Math.abs(nx) - dz) / (1 - dz), 2);
+            const fy = Math.abs(ny) < dz ? 0 : Math.sign(ny) * Math.pow((Math.abs(ny) - dz) / (1 - dz), 2);
+            onChange(fx, fy);
+        }
+    }
+
+    function toggleGrip() {
+        audio.init();
+        audio.playPneumatic();
+        clawOpen = !clawOpen;
+
+        endEffector.getWorldPosition(POOL.v1);
+        const dist = POOL.v1.distanceTo(reactorCore.position);
+
+        if (!clawOpen && dist < 0.45 && !isDelivered) {
+            isSecured = true;
+            document.getElementById('status-tag').innerText = I18N[currentLang].statusSecured;
+            document.getElementById('status-tag').style.background = "rgba(0, 229, 255, 0.25)";
+        } else if (clawOpen && isSecured) {
+            const socketDist = POOL.v1.distanceTo(reactorSocket.position);
+            if (socketDist < 0.38) {
+                isDelivered = true;
+                isSecured = false;
+                reactorCore.position.set(0.75, 0.32, 0.75);
+                audio.playSuccess();
+                document.getElementById('status-tag').innerText = I18N[currentLang].statusComplete;
+                document.getElementById('status-tag').style.background = "rgba(0, 255, 100, 0.2)";
+                document.getElementById('status-tag').style.borderColor = "#00ff66";
+            } else {
+                isSecured = false;
+                document.getElementById('status-tag').innerText = I18N[currentLang].statusReady;
+            }
+        }
+    }
+
+    function solveIK(target) {
+        for (let iter = 0; iter < 3; iter++) {
+            for (let i = ikBones.length - 1; i >= 0; i--) {
+                const bone = ikBones[i];
+                bone.obj.getWorldPosition(POOL.v1);
+                endEffector.getWorldPosition(POOL.v2);
+
+                POOL.toEnd.subVectors(POOL.v2, POOL.v1).normalize();
+                POOL.toTarget.subVectors(target, POOL.v1).normalize();
+
+                let angle = POOL.toEnd.dot(POOL.toTarget);
+                angle = Math.acos(Math.max(-1, Math.min(1, angle)));
+
+                if (angle > 0.001) {
+                    POOL.cross.crossVectors(POOL.toEnd, POOL.toTarget).normalize();
+                    let currentRot = (bone.axis === 'Y') ? bone.obj.rotation.y : bone.obj.rotation.x;
+                    let targetDelta = (bone.axis === 'Y' ? POOL.cross.y : POOL.cross.x) * angle * 0.7;
+                    targetDelta = Math.max(-0.12, Math.min(0.12, targetDelta));
+                    let nextRot = Math.max(bone.min, Math.min(bone.max, currentRot + targetDelta));
+
+                    if (bone.axis === 'Y') bone.obj.rotation.y = nextRot;
+                    else bone.obj.rotation.x = nextRot;
+                    bone.obj.updateMatrixWorld(true);
+                }
+            }
+        }
+    }
+
+    function onWindowResize() {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    /* =========================================================================
+       5. 主動畫迴圈
+       ========================================================================= */
+    const clock = new THREE.Clock();
+
+    function animate() {
+        requestAnimationFrame(animate);
+        const dt = Math.min(clock.getDelta(), 0.05);
+
+        // 呼吸發光
+        if (coreGlow) {
+            const pulse = 1.0 + Math.sin(Date.now() * 0.005) * 0.12;
+            coreGlow.scale.set(pulse, pulse, pulse);
         }
 
-        // 開機過渡
-        setTimeout(() => {
-            const splash = document.getElementById('splash-screen');
-            if (splash) {
-                splash.style.opacity = '0';
-                setTimeout(() => splash.style.display = 'none', 1000);
-            }
-        }, 1200);
+        // 操控映射 (基於當前相機視角方向進行前後左右平移)
+        camera.getWorldDirection(POOL.forward);
+        POOL.forward.y = 0; POOL.forward.normalize();
+        POOL.right.crossVectors(POOL.forward, camera.up).normalize().negate();
 
-        // 社交分享
-        document.getElementById('btn-share')?.addEventListener('click', async () => {
-            const time = document.getElementById('final-time').innerText;
-            const score = document.getElementById('final-score').innerText;
-            const rank = document.getElementById('final-rank').innerText;
-            const shareData = {
-                title: '⚡ J.A.R. 在手之上 3D',
-                text: `我在 J.A.R. 實驗室操控 ARM-01 以 ${time} 秒完成量子核心安裝，斬獲 ${rank} 級（${score} 分）！你能超越我嗎？`,
-                url: window.location.href
-            };
-            if (navigator.share) {
-                try { await navigator.share(shareData); } catch (err) {}
+        const moveSpeed = 1.9 * dt;
+        POOL.v1.copy(POOL.forward).multiplyScalar(-inputState.ly * moveSpeed);
+        POOL.v2.copy(POOL.right).multiplyScalar(inputState.lx * moveSpeed);
+        targetPos.add(POOL.v1).add(POOL.v2);
+        targetPos.y -= inputState.ry * moveSpeed;
+
+        // 工作半徑與高度限制
+        if (targetPos.y < 0.32) targetPos.y = 0.32;
+        if (targetPos.y > 2.6) targetPos.y = 2.6;
+        const radius = Math.hypot(targetPos.x, targetPos.z);
+        if (radius > 2.2) {
+            targetPos.x = (targetPos.x / radius) * 2.2;
+            targetPos.z = (targetPos.z / radius) * 2.2;
+        }
+
+        // 磁吸與引導提示
+        endEffector.getWorldPosition(POOL.v1);
+        const guidanceEl = document.getElementById('mission-guidance');
+        const dict = I18N[currentLang];
+
+        if (!isSecured && !isDelivered) {
+            const distToCore = POOL.v1.distanceTo(reactorCore.position);
+            if (distToCore > 0.45) {
+                guidanceEl.innerText = dict.step1;
+                guidanceEl.style.color = "#00e5ff";
             } else {
-                navigator.clipboard.writeText(`${shareData.text} 體驗連結: ${shareData.url}`);
-                alert("📋 戰績與連結已複製到剪貼簿！");
+                guidanceEl.innerText = dict.step2;
+                guidanceEl.style.color = "#00ff66";
+                targetPos.lerp(reactorCore.position, 6.0 * dt); // 磁吸輔助
             }
-        });
+        } else if (isSecured) {
+            reactorCore.position.lerp(POOL.v1, 14.0 * dt);
+            const distToSocket = POOL.v1.distanceTo(reactorSocket.position);
+            if (distToSocket > 0.38) {
+                guidanceEl.innerText = dict.step3;
+                guidanceEl.style.color = "#ff9100";
+            } else {
+                guidanceEl.innerText = dict.step4;
+                guidanceEl.style.color = "#00ff66";
+            }
+            if (distToSocket < 0.34) {
+                targetPos.lerp(reactorSocket.position, 5.0 * dt);
+            }
+        }
+
+        // IK 解算
+        solveIK(targetPos);
+
+        // 夾爪動畫
+        const targetOffset = clawOpen ? 0.08 : 0.01;
+        clawLeft.position.x += (-0.06 - targetOffset - clawLeft.position.x) * 0.25;
+        clawRight.position.x += (0.06 + targetOffset - clawRight.position.x) * 0.25;
+
+        // 馬達聲音
+        audio.setMotorPitch(Math.hypot(inputState.lx, inputState.ly, inputState.rx, inputState.ry));
+
+        // 軌道控制器更新 (保持多角度自由旋轉)
+        controls.update();
+
+        renderer.render(scene, camera);
+    }
+
+    window.onload = () => {
+        init();
+        animate();
+    };
     </script>
-    <script type="module" src="src/main.js"></script>
 </body>
 </html>
