@@ -5,58 +5,73 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#00e5ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>J.A.R. 在手之上 3D ｜ DUM-E 手遊</title>
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="在手之上">
+    <title>J.A.R. 在手之上 3D ｜ ARM-01 機械臂手遊</title>
+    <link rel="manifest" href="manifest.json">
     <link rel="stylesheet" href="css/style.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
-    <!-- 1. 史塔克開機啟動畫面 -->
-    <div id="splash-screen" style="position:absolute; z-index:1000; width:100%; height:100%; background:#040810; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:opacity 1.0s;">
-        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:6px; font-weight:800; text-shadow:0 0 30px rgba(0,229,255,0.4);">⚡ STARK LAB</h1>
-        <p style="color:#8899aa; font-size:12px; letter-spacing:3px; margin-top:6px;">J.A.R. BEYOND THE HAND</p>
-        <div style="margin-top:24px; width:44px; height:44px; border:2px solid #00e5ff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>
-        <p style="color:#556677; font-size:10px; margin-top:16px;">INITIALIZING SYSTEMS...</p>
+    <!-- 啟動過渡畫面 (J.A.R. 原創標識) -->
+    <div id="splash-screen">
+        <h1 class="splash-title">⚡ J.A.R. LAB</h1>
+        <p class="splash-sub">BEYOND THE HAND 3D</p>
+        <div class="splash-spinner"></div>
+        <p class="splash-status">INITIALIZING SYSTEMS...</p>
     </div>
 
     <div id="canvas-container"></div>
 
-    <!-- 2. 全息 HUD 與動態引導 -->
+    <!-- 全息 HUD、進度條與引導 -->
     <div id="hud">
         <div class="hud-header">
-            <div class="hud-title">⚡ STARK LAB // DUM-E</div>
+            <div class="hud-title">⚡ J.A.R. LAB // ARM-01</div>
             <div id="status-tag" class="hud-status">SYSTEM READY</div>
         </div>
+        
         <div class="mission-card">
-            <div class="mission-title">PRIMARY OBJECTIVE</div>
-            <div id="mission-guidance" style="font-size:13px; font-weight:bold; color:#00e5ff; margin-top:3px;">🎯 移向前方發光核心</div>
+            <div class="mission-title">MISSION 01: 量子核心裝配</div>
+            <div id="mission-guidance" class="mission-guidance-text">🎯 移向前方發光核心</div>
+            <div class="progress-bar-bg">
+                <div id="phase-progress-bar" class="progress-bar-fill"></div>
+            </div>
         </div>
         <div></div>
     </div>
 
-    <!-- 3. 雙搖桿與按鈕 -->
+    <!-- 虛擬雙搖桿與夾爪按鈕 -->
     <div class="controls-overlay">
         <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- 4. 結算畫面 (Victory Modal) -->
-    <div id="success-screen" style="display:none; position:absolute; z-index:100; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(4,12,24,0.95); border:2px solid #00ff66; border-radius:12px; padding:24px 32px; text-align:center; backdrop-filter:blur(12px); box-shadow:0 0 40px rgba(0,255,100,0.3);">
-        <div style="font-size:40px;">🏆</div>
-        <h2 style="color:#00ff66; font-size:20px; margin:8px 0;">MISSION ACCOMPLISHED</h2>
-        <p style="color:#88ccdd; font-size:13px;">方舟反應爐成功激活！史塔克實驗室能源已滿載。</p>
-        <div style="display:flex; gap:16px; margin-top:16px; justify-content:center;">
-            <span style="color:#8899aa; font-size:12px;">⏱️ 用時: <span id="final-time" style="color:#00e5ff; font-weight:bold;">--</span>s</span>
-            <span style="color:#8899aa; font-size:12px;">🎯 評級: <span style="color:#00ff66; font-weight:bold;">S RANK</span></span>
+    <!-- 結算面板 (含評級與分享) -->
+    <div id="success-screen">
+        <div class="trophy-icon">🏆</div>
+        <h2 class="success-title">MISSION ACCOMPLISHED</h2>
+        <div id="new-record-badge" class="record-badge">NEW RECORD!</div>
+        
+        <div class="score-card">
+            <div><div class="score-label">用時</div><div id="final-time" class="score-val cyan">--</div></div>
+            <div><div class="score-label">總分</div><div id="final-score" class="score-val white">--</div></div>
+            <div><div class="score-label">評級</div><div id="final-rank" class="score-val green">S</div></div>
         </div>
-        <button onclick="location.reload()" style="margin-top:18px; padding:8px 24px; background:#00e5ff; border:none; border-radius:6px; color:#040810; font-weight:bold; font-size:13px; cursor:pointer;">🔄 重新挑戰</button>
+
+        <div class="btn-group">
+            <button onclick="location.reload()" class="btn-action btn-cyan">🔄 再玩一次</button>
+            <button id="btn-share" class="btn-action btn-outline">📤 分享戰績</button>
+        </div>
     </div>
 
-    <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-    </style>
-
     <script>
+        // 註冊 Service Worker
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => navigator.serviceWorker.register('./service-worker.js'));
+        }
+
+        // 開機過渡
         setTimeout(() => {
             const splash = document.getElementById('splash-screen');
             if (splash) {
@@ -64,6 +79,24 @@
                 setTimeout(() => splash.style.display = 'none', 1000);
             }
         }, 1200);
+
+        // 社交分享
+        document.getElementById('btn-share')?.addEventListener('click', async () => {
+            const time = document.getElementById('final-time').innerText;
+            const score = document.getElementById('final-score').innerText;
+            const rank = document.getElementById('final-rank').innerText;
+            const shareData = {
+                title: '⚡ J.A.R. 在手之上 3D',
+                text: `我在 J.A.R. 實驗室操控 ARM-01 以 ${time} 秒完成量子核心安裝，斬獲 ${rank} 級（${score} 分）！你能超越我嗎？`,
+                url: window.location.href
+            };
+            if (navigator.share) {
+                try { await navigator.share(shareData); } catch (err) {}
+            } else {
+                navigator.clipboard.writeText(`${shareData.text} 體驗連結: ${shareData.url}`);
+                alert("📋 戰績與連結已複製到剪貼簿！");
+            }
+        });
     </script>
     <script type="module" src="src/main.js"></script>
 </body>
