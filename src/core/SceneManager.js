@@ -16,6 +16,8 @@ export class SceneManager {
         this.renderer.toneMappingExposure = 1.4;
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+        // 掛載 canvas
         this.container.appendChild(this.renderer.domElement);
 
         this._buildLighting();
@@ -33,12 +35,10 @@ export class SceneManager {
         mainSpot.shadow.mapSize.height = 1024;
         this.scene.add(mainSpot);
 
-        // 輪廓邊緣冷藍光 (Rim Light)
         const rimLight = new THREE.DirectionalLight(0x00e5ff, 3.6);
         rimLight.position.set(-6, 6, -5);
         this.scene.add(rimLight);
 
-        // 底部回火暖橙補光
         const warmBounce = new THREE.DirectionalLight(0xff6600, 1.3);
         warmBounce.position.set(4, -1, 3);
         this.scene.add(warmBounce);
@@ -50,18 +50,15 @@ export class SceneManager {
         const pipeMat = new THREE.MeshStandardMaterial({ color: 0x242e3a, metalness: 0.9, roughness: 0.3 });
         const glowCyan = new THREE.MeshBasicMaterial({ color: 0x00e5ff });
 
-        // 1. 後方巨型科技背牆
         const backWall = new THREE.Mesh(new THREE.PlaneGeometry(28, 14), wallMat);
         backWall.position.set(0, 5, -8);
         this.scene.add(backWall);
 
-        // 2. 鋼結構立柱與散熱鰭片矩陣
         for (let x = -8; x <= 8; x += 4) {
             const pillar = new THREE.Mesh(new THREE.BoxGeometry(0.35, 14, 0.45), frameMat);
             pillar.position.set(x, 5, -7.8);
             this.scene.add(pillar);
 
-            // 散熱鰭片組 (Fins)
             for (let y = 1; y < 9; y += 1.2) {
                 const fin = new THREE.Mesh(new THREE.BoxGeometry(0.45, 0.05, 0.2), frameMat);
                 fin.position.set(x, y, -7.6);
@@ -69,7 +66,6 @@ export class SceneManager {
             }
         }
 
-        // 3. 橫貫式工業能量冷卻管道 (Industrial Pipes)
         for (let y of [2.2, 4.8, 6.4]) {
             const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 24, 16), pipeMat);
             pipe.rotation.z = Math.PI / 2;
@@ -77,12 +73,10 @@ export class SceneManager {
             this.scene.add(pipe);
         }
 
-        // 4. 全息發光掃描燈帶
         const wallStrip = new THREE.Mesh(new THREE.BoxGeometry(20, 0.08, 0.05), glowCyan);
         wallStrip.position.set(0, 3.5, -7.4);
         this.scene.add(wallStrip);
 
-        // 5. 頂部工業照明燈槽
         for (let z = -4; z <= 4; z += 4) {
             const lightBar = new THREE.Mesh(
                 new THREE.BoxGeometry(12, 0.15, 0.3),
@@ -92,7 +86,6 @@ export class SceneManager {
             this.scene.add(lightBar);
         }
 
-        // 6. 下沉式裝甲工作台
         const floorGeo = new THREE.CylinderGeometry(3.5, 3.7, 0.2, 48);
         const floorMat = new THREE.MeshStandardMaterial({ color: 0x141b24, metalness: 0.9, roughness: 0.3 });
         const floor = new THREE.Mesh(floorGeo, floorMat);
@@ -104,7 +97,6 @@ export class SceneManager {
         grid.position.y = 0.01;
         this.scene.add(grid);
 
-        // 7. 3 層同心圓導流槽底座
         for (let i = 0; i < 3; i++) {
             const ring = new THREE.Mesh(
                 new THREE.TorusGeometry(0.9 + i * 0.55, 0.015, 8, 64),
@@ -115,7 +107,6 @@ export class SceneManager {
             this.scene.add(ring);
         }
 
-        // 8. J.A.R. 專屬全息地台投影
         const labelSprite = new THREE.Sprite(
             new THREE.SpriteMaterial({
                 map: (() => {
@@ -150,5 +141,9 @@ export class SceneManager {
 
     render() {
         this.renderer.render(this.scene, this.camera);
+    }
+
+    dispose() {
+        this.renderer.dispose();
     }
 }
