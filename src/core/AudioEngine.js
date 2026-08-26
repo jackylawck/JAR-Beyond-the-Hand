@@ -13,7 +13,7 @@ export class AudioEngine {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         this.ctx = new AudioCtx();
 
-        // 1. 伺服馬達音效
+        // 馬達音效
         this.motorOsc = this.ctx.createOscillator();
         this.motorGain = this.ctx.createGain();
         this.motorOsc.type = 'triangle';
@@ -23,37 +23,25 @@ export class AudioEngine {
         this.motorGain.connect(this.ctx.destination);
         this.motorOsc.start();
 
-        // 2. 實驗室環境底噪 (風扇與冷卻液流動)
-        this._startAmbience();
-
-        // 3. 動態張力 BGM
-        this._startDynamicBGM();
-    }
-
-    _startAmbience() {
-        const osc = this.ctx.createOscillator();
+        // 環境交流音
+        const ambOsc = this.ctx.createOscillator();
         this.ambienceGain = this.ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(60, this.ctx.currentTime); // 60Hz 電網交流音
+        ambOsc.type = 'sine';
+        ambOsc.frequency.setValueAtTime(60, this.ctx.currentTime);
         this.ambienceGain.gain.setValueAtTime(0.015, this.ctx.currentTime);
-        osc.connect(this.ambienceGain);
+        ambOsc.connect(this.ambienceGain);
         this.ambienceGain.connect(this.ctx.destination);
-        osc.start();
-    }
+        ambOsc.start();
 
-    _startDynamicBGM() {
+        // 動態張力 BGM
         this.bgmOsc = this.ctx.createOscillator();
         this.bgmGain = this.ctx.createGain();
         this.bgmOsc.type = 'sawtooth';
-        
-        // 低通濾波器創造沉浸感
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'lowpass';
         filter.frequency.setValueAtTime(300, this.ctx.currentTime);
-
-        this.bgmOsc.frequency.setValueAtTime(110, this.ctx.currentTime); // A2
+        this.bgmOsc.frequency.setValueAtTime(110, this.ctx.currentTime);
         this.bgmGain.gain.setValueAtTime(0.01, this.ctx.currentTime);
-
         this.bgmOsc.connect(filter);
         filter.connect(this.bgmGain);
         this.bgmGain.connect(this.ctx.destination);
@@ -62,12 +50,9 @@ export class AudioEngine {
 
     updateTension(distanceToTarget) {
         if (!this.ctx || !this.bgmOsc) return;
-        // 距離越近，張力音高由 110Hz 爬升至 220Hz
         const tension = Math.max(0, Math.min(1, 1 - (distanceToTarget - 0.3) / 1.5));
-        const targetFreq = 110 + tension * 110;
-        const targetVol = 0.01 + tension * 0.03;
-        this.bgmOsc.frequency.setTargetAtTime(targetFreq, this.ctx.currentTime, 0.15);
-        this.bgmGain.gain.setTargetAtTime(targetVol, this.ctx.currentTime, 0.15);
+        this.bgmOsc.frequency.setTargetAtTime(110 + tension * 110, this.ctx.currentTime, 0.15);
+        this.bgmGain.gain.setTargetAtTime(0.01 + tension * 0.03, this.ctx.currentTime, 0.15);
     }
 
     setMotorPitch(speed) {
@@ -88,7 +73,6 @@ export class AudioEngine {
         const filter = this.ctx.createBiquadFilter();
         filter.type = 'bandpass';
         filter.frequency.value = 2200;
-
         const gain = this.ctx.createGain();
         gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
@@ -101,7 +85,7 @@ export class AudioEngine {
 
     playSuccess() {
         if (!this.ctx) return;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6 勝利大和弦
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, idx) => {
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
@@ -109,11 +93,24 @@ export class AudioEngine {
             osc.frequency.setValueAtTime(freq, this.ctx.currentTime + idx * 0.08);
             gain.gain.setValueAtTime(0.15, this.ctx.currentTime + idx * 0.08);
             gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + idx * 0.08 + 0.4);
-
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start(this.ctx.currentTime + idx * 0.08);
             osc.stop(this.ctx.currentTime + idx * 0.08 + 0.4);
         });
+    }
+
+    playError() {
+        if (!this.ctx) return;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(120, this.ctx.currentTime);
+        gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, this.ctx.currentTime + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.2);
     }
 }
