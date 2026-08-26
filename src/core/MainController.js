@@ -19,8 +19,8 @@ export class MainController {
         this.isRunning = false;
         this.rafId = null;
 
-        // Zero-Allocation 目標位置 (IK Target)
-        this.targetPos = new THREE.Vector3(0, 1.8, 1.6);
+        // Zero-Allocation 目標位置 (IK Target) 與基準坐標
+        this.targetPos = new THREE.Vector3(0, 1.9, 1.5);
         this.idleTime = 0;
 
         // 注入基礎子系統
@@ -35,18 +35,18 @@ export class MainController {
         this.mission = null;
         this.dropZone = null;
         this.controls = null;
-        this.currentCustomMesh = null; // 追蹤自訂裝配模型以防洩漏
+        this.currentCustomMesh = null;
     }
 
     init() {
         try {
-            // 1. 初始化 360° 軌道控制器 (並限制觸控穿透)
+            // 1. 初始化 360° 軌道控制器 (支援多角度觀察)
             if (typeof THREE.OrbitControls !== 'undefined') {
                 this.controls = new THREE.OrbitControls(this.scene.camera, this.scene.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.08;
-                this.controls.target.set(0, 1.0, 0.5);
-                this.controls.maxPolarAngle = Math.PI / 2 + 0.05;
+                this.controls.target.set(0, 1.1, 0.4);
+                this.controls.maxPolarAngle = Math.PI / 2 + 0.02;
                 this.controls.minDistance = 2.0;
                 this.controls.maxDistance = 10.0;
             }
@@ -69,7 +69,7 @@ export class MainController {
             // 4. HUD 初始化
             this.hud.init(this.mission, this.armData);
 
-            // 5. 綁定雙搖桿與夾爪控制 (解決觸控衝突)
+            // 5. 綁定雙搖桿與夾爪控制 (觸控互斥保護)
             JoystickManager.init(
                 (x, y) => {
                     this.inputMapper.setTranslation(x, y);
@@ -83,7 +83,7 @@ export class MainController {
             );
 
             // 6. 科研/創客模式：掛載 UGC 3D 列印 STL 拖拽介面
-            if (this.config.getLevel() === 'research' || this.config.get('ugc.enabled')) {
+            if (this.config && (this.config.getLevel?.() === 'research' || this.config.get?.('ugc.enabled'))) {
                 this.dropZone = new ModelDropZone((modelData) => {
                     this._handleUGCModel(modelData);
                 });
@@ -104,7 +104,7 @@ export class MainController {
      * 即時切換雙語 (zh / en)
      */
     setLanguage(lang) {
-        if (this.config.setLang) {
+        if (this.config && this.config.setLang) {
             this.config.setLang(lang);
         }
         if (this.hud && this.hud.updateLanguage) {
@@ -117,46 +117,48 @@ export class MainController {
         this.rafId = requestAnimationFrame(() => this.animate());
 
         const rawDt = Math.min(this.clock.getDelta(), 0.05);
-        const timeScale = this.mission ? this.mission.timeScale : 1.0;
+        const timeScale = this.mission ? (this.mission.timeScale || 1.0) : 1.0;
         const dt = rawDt * timeScale;
         const camera = this.scene.camera;
         this.idleTime += dt;
 
-        // 1. 機械臂待機微動作 (Idle Breathing 微幅呼吸晃動)
+        // 1. 機械臂待機微動作 (修正高度漂移：使用振幅微調而非持續累加)
         const intensity = this.inputMapper.getIntensity();
         if (intensity < 0.01 && !this.mission.isSecured && !this.mission.isIgniting) {
-            const idleOffset = Math.sin(this.idleTime * 1.5) * 0.012;
-            this.targetPos.y += idleOffset * dt;
+            const idleOffset = Math.sin(this.idleTime * 1.8) * 0.003;
+            this.targetPos.y += idleOffset;
         }
 
-        // 2. 核心呼吸發光動畫
+        // 2. 核心呼吸脈衝光
         if (this.armData.coreGlow) {
-            const pulse = 1.0 + Math.sin(this.idleTime * 3.0) * 0.15;
+            const pulse = 1.0 + Math.sin(this.idleTime * 3.2) * 0.15;
             this.armData.coreGlow.scale.set(pulse, pulse, pulse);
         }
 
-        // 3. 環境大氣浮塵與能量流動槽更新
+        // 3. 環境大氣微塵與能量流動光節點
         this.atmosphere.update(dt);
 
-        // 4. 操控映射 (基於當前視角前後左右平移)
+        // 4. 操控映射 (基於當前視角平移)
         this.inputMapper.update(this.targetPos, dt, camera);
 
         // 5. 任務狀態、磁吸與點火序列
         this.mission.update(dt, this.targetPos);
 
         // 6. 阻尼 CCD-IK 逆運動學解算
+        const ikIterations = this.config?.get?.('ik.iterations') || 3;
+        const ikDamping = this.config?.get?.('ik.damping') || 0.7;
         CCDIKSolver.solve(
             this.armData.ikBones,
             this.armData.endEffector,
             this.targetPos,
-            this.config.get('ik.iterations'),
-            this.config.get('ik.damping')
+            ikIterations,
+            ikDamping
         );
 
         // 7. 夾爪開合插值動畫
         this._updateGripper();
 
-        // 8. 相機視角更新 (點火時全景鏡頭，平時支援 360° 滑動環視)
+        // 8. 相機視角更新 (點火時全景鏡頭，平時支援 360° 自由環視)
         this._updateCamera(rawDt, camera);
 
         // 9. 特效與震屏
@@ -174,9 +176,9 @@ export class MainController {
 
     _updateGripper() {
         const targetOffset = this.mission.clawOpen
-            ? this.config.get('gripper.open')
-            : this.config.get('gripper.closed');
-        const speed = this.config.get('gripper.lerpSpeed');
+            ? (this.config?.get?.('gripper.open') || 0.08)
+            : (this.config?.get?.('gripper.closed') || 0.01);
+        const speed = this.config?.get?.('gripper.lerpSpeed') || 0.25;
 
         this.armData.clawLeft.position.x += (-0.06 - targetOffset - this.armData.clawLeft.position.x) * speed;
         this.armData.clawRight.position.x += (0.06 + targetOffset - this.armData.clawRight.position.x) * speed;
@@ -204,11 +206,11 @@ export class MainController {
         const targetMesh = (slot === 'claw') ? this.armData.endEffector : this.armData.ikBones[2].obj;
 
         if (targetMesh && geometry) {
-            // 清理舊有的自訂裝配模型，防止重複疊加穿模
+            // 清理舊有的自訂裝配模型，防止重複疊加穿模與記憶體洩漏
             if (this.currentCustomMesh) {
-                this.currentCustomMesh.parent.remove(this.currentCustomMesh);
-                if (this.currentCustomMesh.geometry) this.currentCustomMesh.geometry.dispose();
-                if (this.currentCustomMesh.material) this.currentCustomMesh.material.dispose();
+                this.currentCustomMesh.parent?.remove(this.currentCustomMesh);
+                this.currentCustomMesh.geometry?.dispose();
+                this.currentCustomMesh.material?.dispose();
                 this.currentCustomMesh = null;
             }
 
