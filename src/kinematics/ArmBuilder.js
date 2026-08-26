@@ -1,5 +1,8 @@
+import * as THREE from 'three';
+
 export class ArmBuilder {
     static build(scene, mode = 'kid') {
+        // 1. 程序化微刮痕與工業噪點貼圖
         const scratchTex = (() => {
             const c = document.createElement('canvas');
             c.width = 512;
@@ -25,46 +28,35 @@ export class ArmBuilder {
             return t;
         })();
 
-        let theme = {
-            armor: 0xf1f5f9,
-            secondary: 0x1e293b,
-            accent: 0xe05600,
-            hose: 0xdc2626,
-            led: 0x00e5ff
-        };
+        // 2. 基礎情境配色
+        let theme = { armor: 0xf1f5f9, secondary: 0x1e293b, accent: 0xe05600, hose: 0xdc2626, led: 0x00e5ff };
 
         if (mode === 'kid') {
-            theme = {
-                armor: 0xffffff,
-                secondary: 0x334155,
-                accent: 0xf97316,
-                hose: 0x16a34a,
-                led: 0x4ade80
-            };
+            theme = { armor: 0xffffff, secondary: 0x334155, accent: 0xf97316, hose: 0x16a34a, led: 0x4ade80 };
         } else if (mode === 'advanced') {
-            theme = {
-                armor: 0x334155,
-                secondary: 0x0f172a,
-                accent: 0xeab308,
-                hose: 0xef4444,
-                led: 0x38bdf8
-            };
+            theme = { armor: 0x334155, secondary: 0x0f172a, accent: 0xeab308, hose: 0xef4444, led: 0x38bdf8 };
         } else {
-            theme = {
-                armor: 0x0f172a,
-                secondary: 0x1e293b,
-                accent: 0x00e5ff,
-                hose: 0x6366f1,
-                led: 0x00ffff
-            };
+            theme = { armor: 0x0f172a, secondary: 0x1e293b, accent: 0x00e5ff, hose: 0x6366f1, led: 0x00ffff };
         }
 
+        // 🌟 S 級解鎖判定：黃金特仕版塗裝
+        const unlocks = JSON.parse(localStorage.getItem('jar-unlocks') || '{}');
+        let finalMetalness = mode === 'research' ? 0.95 : 0.82;
+        let finalRoughness = mode === 'research' ? 0.18 : 0.28;
+
+        if (unlocks.goldenSkin) {
+            theme.armor = 0xd4af37; // 究極土豪金
+            finalMetalness = 1.0;
+            finalRoughness = 0.15;
+        }
+
+        // 3. 材質庫
         const matArmor = new THREE.MeshStandardMaterial({
             color: theme.armor,
-            metalness: mode === 'research' ? 0.95 : 0.82,
-            roughness: mode === 'research' ? 0.18 : 0.28,
+            metalness: finalMetalness,
+            roughness: finalRoughness,
             roughnessMap: scratchTex,
-            envMapIntensity: 1.4
+            envMapIntensity: 1.8
         });
 
         const matSecondary = new THREE.MeshStandardMaterial({
@@ -90,7 +82,6 @@ export class ArmBuilder {
             envMapIntensity: 2.2
         });
 
-        // 🌟 微調 1：強化夾爪 PBR 陽極氧化金屬質感 (高金屬度 + 微粗糙拉絲)
         const matAccent = new THREE.MeshStandardMaterial({
             color: theme.accent,
             metalness: 0.88,
@@ -99,24 +90,14 @@ export class ArmBuilder {
             envMapIntensity: 1.8
         });
 
-        const matHose = new THREE.MeshStandardMaterial({
-            color: theme.hose,
-            roughness: 0.6,
-            metalness: 0.2
-        });
-
-        const matRubberGrip = new THREE.MeshStandardMaterial({
-            color: 0x18181b,
-            roughness: 0.95,
-            metalness: 0.05
-        });
-
+        const matHose = new THREE.MeshStandardMaterial({ color: theme.hose, roughness: 0.6, metalness: 0.2 });
+        const matRubberGrip = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95, metalness: 0.05 });
         const matLed = new THREE.MeshBasicMaterial({ color: theme.led });
         const matStatusLed = new THREE.MeshBasicMaterial({ color: 0xff7700 });
 
         const ikBones = [];
 
-        // 1. 基座
+        // --- 骨架組裝 ---
         const baseGroup = new THREE.Group();
         baseGroup.position.set(0, 0.12, 0);
         scene.add(baseGroup);
@@ -138,7 +119,6 @@ export class ArmBuilder {
             baseGroup.add(bolt);
         }
 
-        // 2. Joint 0 (Yaw)
         const joint0 = new THREE.Group();
         joint0.position.set(0, 0.26, 0);
         baseGroup.add(joint0);
@@ -158,13 +138,11 @@ export class ArmBuilder {
             const finL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.26), matChrome);
             finL.position.set(-0.31, 0.12 + f * 0.06, 0);
             joint0.add(finL);
-
             const finR = finL.clone();
             finR.position.x = 0.31;
             joint0.add(finR);
         }
 
-        // 3. Joint 1 (Shoulder)
         const joint1 = new THREE.Group();
         joint1.position.set(0, 0.34, 0);
         joint0.add(joint1);
@@ -205,7 +183,6 @@ export class ArmBuilder {
         extensionRod.position.set(0, 0.65, 0);
         joint1.add(extensionRod);
 
-        // 4. Joint 2 (Elbow)
         const joint2 = new THREE.Group();
         joint2.position.set(0, 1.05, 0);
         joint1.add(joint2);
@@ -230,7 +207,6 @@ export class ArmBuilder {
         const hoseMesh = new THREE.Mesh(hoseGeo, matHose);
         joint2.add(hoseMesh);
 
-        // 5. Joint 3 (Wrist & Claws)
         const joint3 = new THREE.Group();
         joint3.position.set(0, 0.85, 0);
         joint2.add(joint3);
@@ -275,7 +251,7 @@ export class ArmBuilder {
         endEffector.position.set(0, 0.3, 0);
         joint3.add(endEffector);
 
-        // 6. 基座槽位
+        // --- 基座槽位 ---
         const socketGroup = new THREE.Group();
         socketGroup.position.set(0.9, 0.12, 0.9);
         scene.add(socketGroup);
@@ -296,76 +272,12 @@ export class ArmBuilder {
         socketGlowRing.position.y = 0.145;
         socketGroup.add(socketGlowRing);
 
-        // 7. 能量核心組裝
-        const coreGroup = new THREE.Group();
-        coreGroup.position.set(-0.85, 0.25, 0.85);
-        scene.add(coreGroup);
-
-        const coreBody = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.12, 0.12, 0.16, 16),
-            new THREE.MeshStandardMaterial({ color: 0x111827, metalness: 0.9, roughness: 0.1 })
-        );
-        coreBody.castShadow = true;
-        coreGroup.add(coreBody);
-
-        const coreGlowMesh = new THREE.Mesh(
-            new THREE.TorusGeometry(0.1, 0.025, 12, 32),
-            new THREE.MeshBasicMaterial({ color: theme.led })
-        );
-        coreGlowMesh.rotation.x = Math.PI / 2;
-        coreGroup.add(coreGlowMesh);
-
-        // 🌟 微調 2：48 顆雙層立體交叉粒子軌道 (雙向環繞自旋)
-        const pCountInner = 24;
-        const pGeoInner = new THREE.BufferGeometry();
-        const pPosInner = new Float32Array(pCountInner * 3);
-        for (let i = 0; i < pCountInner; i++) {
-            const th = (i / pCountInner) * Math.PI * 2;
-            pPosInner[i * 3] = Math.cos(th) * 0.18;
-            pPosInner[i * 3 + 1] = (Math.random() - 0.5) * 0.06;
-            pPosInner[i * 3 + 2] = Math.sin(th) * 0.18;
-        }
-        pGeoInner.setAttribute('position', new THREE.BufferAttribute(pPosInner, 3));
-        const pMatInner = new THREE.PointsMaterial({
-            color: theme.led,
-            size: 0.024,
-            transparent: true,
-            opacity: 0.9,
-            blending: THREE.AdditiveBlending
-        });
-        const coreParticlesInner = new THREE.Points(pGeoInner, pMatInner);
-        coreGroup.add(coreParticlesInner);
-
-        const pCountOuter = 24;
-        const pGeoOuter = new THREE.BufferGeometry();
-        const pPosOuter = new Float32Array(pCountOuter * 3);
-        for (let i = 0; i < pCountOuter; i++) {
-            const th = (i / pCountOuter) * Math.PI * 2;
-            pPosOuter[i * 3] = Math.cos(th) * 0.24;
-            pPosOuter[i * 3 + 1] = Math.sin(th) * 0.08;
-            pPosOuter[i * 3 + 2] = Math.sin(th) * 0.24;
-        }
-        pGeoOuter.setAttribute('position', new THREE.BufferAttribute(pPosOuter, 3));
-        const pMatOuter = new THREE.PointsMaterial({
-            color: 0xffffff,
-            size: 0.018,
-            transparent: true,
-            opacity: 0.75,
-            blending: THREE.AdditiveBlending
-        });
-        const coreParticlesOuter = new THREE.Points(pGeoOuter, pMatOuter);
-        coreGroup.add(coreParticlesOuter);
-
         return {
             ikBones,
             endEffector,
             clawLeft,
             clawRight,
             reactorSocket: socketGroup,
-            coreGroup,
-            coreGlowMesh,
-            coreParticlesInner,
-            coreParticlesOuter,
             extensionRod,
             pistonRod,
             joint2,
