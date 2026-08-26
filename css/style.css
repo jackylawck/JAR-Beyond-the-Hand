@@ -1,5 +1,5 @@
 /* ============================================================
-   1. Design Tokens 與高對比設計
+   1. Design Tokens 與高對比黑底安全區
    ============================================================ */
 :root {
     --color-primary: #00e5ff;
@@ -10,8 +10,8 @@
     --color-gold: #ffd700;
     --color-danger: #ff0044;
 
-    /* 🌟 深黑高對比膠囊底色 (解決淺色背景下看不到文字的問題) */
-    --color-hud-pill-bg: rgba(3, 9, 20, 0.88);
+    /* 🌟 極高對比深黑毛玻璃底色，無論淺色/深色背景均字字清晰 */
+    --color-hud-pill-bg: rgba(4, 12, 24, 0.92);
     --color-glass-border: rgba(0, 229, 255, 0.45);
     
     --radius-sm: 4px;
@@ -26,6 +26,10 @@
     user-select: none;
     -webkit-user-select: none;
     touch-action: manipulation;
+    /* 🌟 核心修復：強制所有文字自然依單字換行，絕不突出版面 */
+    word-break: normal;
+    overflow-wrap: break-word;
+    white-space: normal;
 }
 
 body, html {
@@ -33,7 +37,7 @@ body, html {
     height: 100vh;
     overflow: hidden;
     background-color: #020810;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 #canvas-container {
@@ -46,7 +50,7 @@ body, html {
 }
 
 /* ============================================================
-   2. 🌟 頂部導航列 (深色高對比安全區)
+   2. 頂部導航列 (深黑高對比保護)
    ============================================================ */
 #hud {
     position: absolute;
@@ -63,12 +67,12 @@ body, html {
 .hud-header {
     display: flex;
     flex-direction: column;
-    gap: 5px;
+    gap: 6px;
     pointer-events: auto;
     background: var(--color-hud-pill-bg);
     border: 1px solid var(--color-glass-border);
     border-radius: var(--radius-md);
-    padding: 6px 10px;
+    padding: 8px 12px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
@@ -86,6 +90,7 @@ body, html {
     display: flex;
     gap: 6px;
     align-items: center;
+    flex-wrap: wrap;
 }
 
 .lang-btn {
@@ -94,7 +99,7 @@ body, html {
     color: #fff;
     font-weight: bold;
     font-size: 11px;
-    padding: 3px 8px;
+    padding: 4px 8px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: 0.2s;
@@ -108,7 +113,7 @@ body, html {
     color: #00ff66;
     font-size: 10px;
     font-weight: bold;
-    padding: 2px 6px;
+    padding: 3px 6px;
     border-radius: var(--radius-sm);
 }
 
@@ -118,7 +123,7 @@ body, html {
     border: 1px solid var(--color-glass-border);
     border-left: 4px solid var(--color-primary);
     border-radius: var(--radius-md);
-    padding: 7px 12px;
+    padding: 8px 12px;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     pointer-events: auto;
@@ -135,20 +140,21 @@ body, html {
     color: var(--color-primary);
     font-size: 11px;
     margin-top: 2px;
+    line-height: 1.3;
 }
 
 .view-hint {
     color: #8899aa;
     font-size: 9px;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 /* ============================================================
-   3. 🌟 實時遙測面板 (一鍵折疊 + 高對比深色毛玻璃)
+   3. 🌟 實時遙測面板 (支援收起折疊 + 高對比深底)
    ============================================================ */
 .telemetry-glass-panel {
     position: absolute;
-    top: clamp(82px, 12vh, 105px);
+    top: clamp(86px, 13vh, 110px);
     left: env(safe-area-inset-left, 12px);
     width: clamp(230px, 28vw, 280px);
     background: var(--color-hud-pill-bg);
@@ -166,7 +172,7 @@ body, html {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 7px 10px;
+    padding: 8px 10px;
     background: rgba(0, 229, 255, 0.12);
     border-bottom: 1px solid rgba(0, 229, 255, 0.2);
     cursor: pointer;
@@ -195,17 +201,20 @@ body, html {
 }
 
 .toggle-collapse-btn {
-    background: transparent;
-    border: none;
-    color: var(--color-primary);
-    font-size: 11px;
+    background: rgba(0, 229, 255, 0.15);
+    border: 1px solid var(--color-primary);
+    color: #00e5ff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
     cursor: pointer;
 }
 
-/* 🌟 折疊狀態 (僅留一行右上/左上小膠囊) */
+/* 🌟 折疊狀態 (僅留頂部小條) */
 .telemetry-glass-panel.collapsed {
     width: auto;
-    min-width: 160px;
+    min-width: 170px;
 }
 
 .telemetry-glass-panel.collapsed .panel-body {
@@ -222,10 +231,10 @@ body, html {
 .telemetry-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 3px 8px;
+    gap: 4px 8px;
     font-family: monospace;
     font-size: 11px;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.45);
     padding: 5px 8px;
     border-radius: var(--radius-sm);
 }
@@ -237,7 +246,7 @@ body, html {
 .telemetry-metrics {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
     font-size: 11px;
 }
 
@@ -264,7 +273,8 @@ body, html {
     border: 1px solid rgba(0, 229, 255, 0.35);
     color: #fff;
     font-size: 10px;
-    padding: 4px;
+    font-weight: bold;
+    padding: 5px;
     border-radius: var(--radius-sm);
     cursor: pointer;
     display: flex;
@@ -300,7 +310,7 @@ body, html {
 }
 
 /* ============================================================
-   4. J.A.R. AI 對話框
+   4. 🌟 J.A.R. AI 對話框 (修復文字溢出與正常排版)
    ============================================================ */
 #jar-dialogue {
     position: absolute;
@@ -311,13 +321,43 @@ body, html {
     border: 1px solid var(--color-primary);
     border-left: 4px solid var(--color-primary);
     border-radius: var(--radius-md);
-    padding: 8px 14px;
+    padding: 10px 14px;
     width: 86%;
     max-width: 440px;
     z-index: 20;
     backdrop-filter: blur(16px);
     -webkit-backdrop-filter: blur(16px);
     box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+    box-sizing: border-box;
+}
+
+#jar-title {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: var(--color-primary);
+}
+
+.online-tag {
+    background: rgba(0, 255, 100, 0.2);
+    border: 1px solid #00ff66;
+    color: #00ff66;
+    font-size: 9px;
+    padding: 1px 4px;
+    border-radius: 3px;
+}
+
+#jar-text {
+    color: #fff;
+    font-size: 12px;
+    line-height: 1.4;
+    /* 🌟 保證英文文字依單字換行且能被空格正確切開 */
+    white-space: normal;
+    word-break: normal;
+    overflow-wrap: break-word;
 }
 
 /* ============================================================
@@ -396,7 +436,60 @@ body, html {
 #btn-grip:active { transform: scale(0.9); }
 
 /* ============================================================
-   6. 🌟 橫向屏幕專屬優化 (Landscape Mode Layout)
+   6. 模式切換 Modal
+   ============================================================ */
+#mode-selector {
+    display: none;
+    position: absolute;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    background: rgba(4, 10, 20, 0.92);
+    backdrop-filter: blur(15px);
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#mode-selector h2 { color: #00e5ff; font-size: 22px; margin-bottom: 4px; }
+#mode-selector p { color: #8899aa; font-size: 13px; margin-bottom: 20px; }
+
+.mode-cards-wrap {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.mode-card {
+    background: rgba(0, 229, 255, 0.05);
+    border: 2px solid rgba(0, 229, 255, 0.3);
+    border-radius: 12px;
+    padding: 16px;
+    width: 150px;
+    cursor: pointer;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.mode-card:hover { border-color: #00e5ff; background: rgba(0, 229, 255, 0.12); }
+.mode-card .icon { font-size: 32px; }
+.mode-card h3 { color: #fff; font-size: 14px; margin: 8px 0 2px; }
+.mode-card p { color: #8899aa; font-size: 11px; margin: 0; }
+
+#btn-close-modal {
+    margin-top: 20px;
+    background: transparent;
+    border: 1px solid #557788;
+    color: #8899aa;
+    padding: 6px 18px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+/* ============================================================
+   7. 🌟 橫向屏幕 (Landscape) 專屬佈局
    ============================================================ */
 @media (orientation: landscape) {
     .telemetry-glass-panel {
@@ -421,12 +514,11 @@ body, html {
         transform: translateX(-50%);
         width: auto;
         min-width: 260px;
-        max-width: 360px;
+        max-width: 380px;
         padding: 6px 12px;
     }
 
     #jar-text {
-        font-size: 11px !important;
-        min-height: 20px !important;
+        font-size: 11px;
     }
 }
