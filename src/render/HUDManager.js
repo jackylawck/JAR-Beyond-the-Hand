@@ -109,7 +109,7 @@ export class HUDManager {
             txtExport: document.getElementById('txt-export'),
             statusBar: document.getElementById('txt-status-bar'),
             
-            // 外部 HUD
+            // 外部靜態 HUD 容錯快取
             appTitle: document.getElementById('app-hud-title'),
             btnSwitchMode: document.getElementById('btn-switch-mode'),
             btnLang: document.getElementById('lang-btn'),
@@ -130,71 +130,72 @@ export class HUDManager {
             this.isCollapsed = !this.isCollapsed;
             this.dom.panel.classList.toggle('collapsed', this.isCollapsed);
             const isEn = (this.lang === 'en');
-            if (this.isCollapsed) {
-                this.dom.collapseBtn.innerText = isEn ? '▶ Show' : '▼ 展開';
-            } else {
-                this.dom.collapseBtn.innerText = isEn ? '◀ Hide' : '◀ 收起';
+            if (this.dom.collapseBtn) {
+                this.dom.collapseBtn.innerText = this.isCollapsed 
+                    ? (isEn ? '▶ Show' : '▼ 展開') 
+                    : (isEn ? '◀ Hide' : '◀ 收起');
             }
         };
 
-        this.dom.toggleBtn.addEventListener('click', toggle);
-        this.dom.collapseBtn.addEventListener('click', toggle);
+        if (this.dom.toggleBtn) this.dom.toggleBtn.addEventListener('click', toggle);
+        if (this.dom.collapseBtn) this.dom.collapseBtn.addEventListener('click', toggle);
 
-        this.dom.btnRecord.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.isRecording = !this.isRecording;
-            this.dom.btnRecord.classList.toggle('active', this.isRecording);
-            const t = I18N[this.lang];
-            this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
-            this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
-            if (this.isRecording) this.recordedData = [];
-        });
+        if (this.dom.btnRecord) {
+            this.dom.btnRecord.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.isRecording = !this.isRecording;
+                this.dom.btnRecord.classList.toggle('active', this.isRecording);
+                const t = I18N[this.lang] || I18N.zh;
+                if (this.dom.txtRecord) this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
+                if (this.dom.statusBar) this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
+                if (this.isRecording) this.recordedData = [];
+            });
+        }
 
-        this.dom.btnExport.addEventListener('click', (e) => {
-            e.stopPropagation();
-            this.exportCSV();
-        });
+        if (this.dom.btnExport) {
+            this.dom.btnExport.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.exportCSV();
+            });
+        }
     }
 
     setLanguage(lang) {
         this.lang = lang;
-        const t = I18N[lang];
-        if (!t || !this.dom.modeTitle) return;
+        const t = I18N[lang] || I18N.zh;
+        if (!t) return;
 
-        // 頂部導航
         if (this.dom.appTitle) this.dom.appTitle.innerText = t.appTitle;
         if (this.dom.btnSwitchMode) this.dom.btnSwitchMode.innerText = t.switchMode;
         if (this.dom.btnLang) this.dom.btnLang.innerText = t.langBtn;
         if (this.dom.statusTag) this.dom.statusTag.innerText = t.statusReady;
         if (this.dom.viewHint) this.dom.viewHint.innerText = t.viewHint;
 
-        // 模式標題
         if (this.mode === 'kid') {
-            this.dom.modeIcon.innerText = '🌱';
-            this.dom.modeTitle.innerText = t.kidTitle;
+            if (this.dom.modeIcon) this.dom.modeIcon.innerText = '🌱';
+            if (this.dom.modeTitle) this.dom.modeTitle.innerText = t.kidTitle;
             if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionKid} (1/3)`;
             if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionKidDesc;
         } else if (this.mode === 'advanced') {
-            this.dom.modeIcon.innerText = '📱';
-            this.dom.modeTitle.innerText = t.advTitle;
+            if (this.dom.modeIcon) this.dom.modeIcon.innerText = '📱';
+            if (this.dom.modeTitle) this.dom.modeTitle.innerText = t.advTitle;
             if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionAdv} (1/3)`;
             if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionAdvDesc;
         } else {
-            this.dom.modeIcon.innerText = '🧪';
-            this.dom.modeTitle.innerText = t.resTitle;
+            if (this.dom.modeIcon) this.dom.modeIcon.innerText = '🧪';
+            if (this.dom.modeTitle) this.dom.modeTitle.innerText = t.resTitle;
             if (this.dom.missionTitle) this.dom.missionTitle.innerText = `${t.missionRes} (1/3)`;
             if (this.dom.missionDesc) this.dom.missionDesc.innerText = t.missionResDesc;
         }
 
-        // 遙測標籤
-        this.dom.lblRadius.innerText = `${t.labelRadius}:`;
-        this.dom.lblError.innerText = `${t.labelError}:`;
-        this.dom.lblPayload.innerText = `${t.labelPayload}:`;
-        this.dom.lblPower.innerText = `${t.labelPower}:`;
-        this.dom.lblFreq.innerText = `${t.labelFreq}:`;
-        this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
-        this.dom.txtExport.innerText = t.btnExportCsv;
-        this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
+        if (this.dom.lblRadius) this.dom.lblRadius.innerText = `${t.labelRadius}:`;
+        if (this.dom.lblError) this.dom.lblError.innerText = `${t.labelError}:`;
+        if (this.dom.lblPayload) this.dom.lblPayload.innerText = `${t.labelPayload}:`;
+        if (this.dom.lblPower) this.dom.lblPower.innerText = `${t.labelPower}:`;
+        if (this.dom.lblFreq) this.dom.lblFreq.innerText = `${t.labelFreq}:`;
+        if (this.dom.txtRecord) this.dom.txtRecord.innerText = this.isRecording ? t.btnRecordStop : t.btnRecordStart;
+        if (this.dom.txtExport) this.dom.txtExport.innerText = t.btnExportCsv;
+        if (this.dom.statusBar) this.dom.statusBar.innerText = this.isRecording ? t.statusRecording : t.statusTelemetry;
 
         if (this.dom.collapseBtn) {
             this.dom.collapseBtn.innerText = this.isCollapsed 
@@ -202,11 +203,10 @@ export class HUDManager {
                 : (lang === 'en' ? '◀ Hide' : '◀ 收起');
         }
 
-        // J.A.R. 助理視窗
         if (this.dom.jarTitleText) this.dom.jarTitleText.innerText = t.jarTitle;
         if (this.dom.jarStatusTag) this.dom.jarStatusTag.innerText = t.jarStatus;
 
-        // 模式切換彈窗
+        // Modal 國際化
         const modalTitle = document.getElementById('modal-title');
         const modalDesc = document.getElementById('modal-desc');
         const modalClose = document.getElementById('btn-close-modal');
@@ -243,7 +243,7 @@ export class HUDManager {
         const payload = mission?.isSecured ? 2.5 : 0.0;
         this.dom.payload.innerText = `${payload.toFixed(1)} N`;
 
-        const totalTorque = torques.reduce((a, b) => a + b, 0);
+        const totalTorque = Array.isArray(torques) ? torques.reduce((a, b) => a + b, 0) : 0;
         const powerMW = Math.round((totalTorque * intensity * 18) + (mission?.isSecured ? 15 : 4));
         this.dom.power.innerText = `${powerMW} mW`;
 
