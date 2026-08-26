@@ -6,6 +6,7 @@ import { InputMapper } from '../controls/InputMapper.js';
 import { JoystickManager } from '../controls/JoystickManager.js';
 import { MissionManager } from '../gameplay/MissionManager.js';
 import { HUDManager } from '../render/HUDManager.js';
+import { ImpactFXManager } from '../render/ImpactFXManager.js';
 
 export class MainController {
     constructor(config, sceneManager, errorBoundary) {
@@ -15,54 +16,47 @@ export class MainController {
         this.clock = new THREE.Clock();
         this.isRunning = false;
 
-        // Zero-Allocation 目標位置
         this.targetPos = new THREE.Vector3(0, 1.8, 1.6);
 
-        // 子系統 (全部通過依賴注入)
+        // 子系統
         this.audio = new AudioEngine();
         this.inputMapper = new InputMapper(config);
         this.hud = new HUDManager(config);
+        this.fx = new ImpactFXManager(this.scene.scene, this.scene.camera);
 
-        // 將被構建嘅子系統
         this.armData = null;
         this.mission = null;
-        this.joystick = null;
     }
 
     init() {
         try {
-            // 1. 構建機械臂
             this.armData = ArmBuilder.build(this.scene.scene);
 
-            // 2. 任務管理器
             this.mission = new MissionManager(
                 this.armData.endEffector,
                 this.armData.reactorCore,
                 this.armData.reactorSocket,
                 this.audio,
-                this.config
+                this.config,
+                this.fx,
+                this.inputMapper
             );
 
-            // 3. HUD
             this.hud.init(this.mission, this.armData);
 
-            // 4. 搖桿 (注入 inputMapper)
-            this.joystick = new JoystickManager(
+            JoystickManager.init(
                 (x, y) => this.inputMapper.setTranslation(x, y),
                 (x, y) => this.inputMapper.setRotation(x, y),
                 () => this.mission.toggleGrip()
             );
 
-            // 5. 啟動主循環
             this.isRunning = true;
             this.animate();
-
-            // 6. 更新狀態
-            this.hud.updateStatus('SYSTEM_READY');
+            this.hud.updateStatus('statusReady');
 
         } catch (error) {
             console.error('[MainController] 初始化失敗:', error);
-            this.errorBoundary._renderError(`Init Failed: ${error.message}`);
+            if (this.errorBoundary) this.errorBoundary._renderError(`Init Failed: ${error.message}`);
         }
     }
 
@@ -73,13 +67,15 @@ export class MainController {
         const dt = Math.min(this.clock.getDelta(), 0.05);
         const camera = this.scene.camera;
 
-        // ----- Stage 1: 輸入處理 -----
-        this.inputMapper.update(this.targetPos, dt, camera);
+        // 核心呼吸光動畫 (Environmental Storytelling)
+        if (this.armData.coreGlow) {
+            const pulse = 1.0 + Math.sin(Date.now() * 0.005) * 0.15;
+            this.armData.coreGlow.scale.set(pulse, pulse, pulse);
+        }
 
-        // ----- Stage 2: 物理與任務 -----
+        this.inputMapper.update(this.targetPos, dt, camera);
         this.mission.update(dt, this.targetPos);
 
-        // ----- Stage 3: IK 解算 -----
         CCDIKSolver.solve(
             this.armData.ikBones,
             this.armData.endEffector,
@@ -88,19 +84,11 @@ export class MainController {
             this.config.get('ik.damping')
         );
 
-        // ----- Stage 4: 夾爪動畫 -----
         this._updateGripper();
-
-        // ----- Stage 5: 相機跟隨 -----
         this._updateCamera(dt, camera);
-
-        // ----- Stage 6: 音效 -----
+        this.fx.update(dt);
         this.audio.setMotorPitch(this.inputMapper.getIntensity());
-
-        // ----- Stage 7: HUD -----
         this.hud.update(this.targetPos, this.armData, this.mission);
-
-        // ----- Stage 8: 渲染 -----
         this.scene.render();
     }
 
@@ -115,19 +103,19 @@ export class MainController {
     }
 
     _updateCamera(dt, camera) {
-        const endPos = this.armData.endEffector.position;
-        const cfg = this.config._config.camera;
+        this.armData.endEffector.getWorldPosition(POOL.v1);
+        const cfg = this.config.get('camera');
 
         POOL.camTargetPos.set(
-            endPos.x * cfg.posWeight,
-            cfg.heightOffset + endPos.y * 0.25,
-            cfg.depthOffset + endPos.z * 0.2
+            POOL.v1.x * cfg.posWeight,
+            cfg.heightOffset + POOL.v1.y * 0.25,
+            cfg.depthOffset + POOL.v1.z * 0.2
         );
         camera.position.lerp(POOL.camTargetPos, cfg.smoothness * dt);
 
         POOL.camLook.set(
-            endPos.x * cfg.lookAtWeight,
-            cfg.lookAtYOffset + endPos.y * 0.2,
+            POOL.v1.x * cfg.lookAtWeight,
+            cfg.lookAtYOffset + POOL.v1.y * 0.2,
             0.5
         );
         camera.lookAt(POOL.camLook);
@@ -138,6 +126,6 @@ export class MainController {
         this.scene.dispose();
         this.audio.dispose?.();
         this.hud.dispose?.();
-        this.joystick.dispose?.();
+        this.fx.dispose?.();
     }
 }
