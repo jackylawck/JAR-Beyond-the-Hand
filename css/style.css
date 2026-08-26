@@ -1,37 +1,27 @@
 /* ============================================================
-   1. Design Tokens (色彩系統 + 字體比例尺)
+   1. Design Tokens 與全息主題
    ============================================================ */
 :root {
-    /* 主色調 */
     --color-primary: #00e5ff;
     --color-primary-dim: rgba(0, 229, 255, 0.12);
     --color-primary-glow: rgba(0, 229, 255, 0.4);
 
     --color-accent: #ff9100;
-    --color-accent-dim: rgba(255, 145, 0, 0.15);
-    --color-accent-glow: rgba(255, 145, 0, 0.45);
-
     --color-gold: #ffd700;
-    --color-gold-glow: rgba(255, 215, 0, 0.5);
-
     --color-danger: #ff0044;
-    --color-danger-glow: rgba(255, 0, 68, 0.4);
 
     --color-bg: #020810;
-    --color-surface: rgba(4, 12, 24, 0.88);
+    --color-glass-bg: rgba(4, 14, 28, 0.55);      /* 超通透毛玻璃背景 */
+    --color-glass-border: rgba(0, 229, 255, 0.28);
     --color-text: #ffffff;
     --color-text-dim: #8899aa;
 
-    /* 圓角與間距 */
     --radius-sm: 4px;
-    --radius-md: 6px;
-    --radius-lg: 12px;
+    --radius-md: 8px;
+    --radius-lg: 14px;
     --radius-full: 50%;
 }
 
-/* ============================================================
-   2. 基礎重置與防跑版
-   ============================================================ */
 * {
     box-sizing: border-box;
     margin: 0;
@@ -46,12 +36,9 @@ body, html {
     height: 100vh;
     overflow: hidden;
     background-color: var(--color-bg);
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, monospace;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
 }
 
-/* ============================================================
-   3. Canvas 容器
-   ============================================================ */
 #canvas-container {
     position: absolute;
     top: 0;
@@ -62,204 +49,274 @@ body, html {
 }
 
 /* ============================================================
-   4. 全息 HUD 系統 (置頂 + clamp 響應式 + 全息掃描線)
+   2. 頂部導航列 (極簡透明)
    ============================================================ */
 #hud {
     position: absolute;
-    top: clamp(10px, 2vh, 20px);
-    left: clamp(10px, 2vw, 20px);
-    z-index: 10;
+    top: env(safe-area-inset-top, 12px);
+    left: env(safe-area-inset-left, 14px);
+    z-index: 30;
     pointer-events: none;
     display: flex;
     flex-direction: column;
-    gap: clamp(6px, 1vh, 10px);
-    max-width: min(320px, 85vw);
-    width: 100%;
-    overflow: hidden;
+    gap: 8px;
+    max-width: min(320px, 80vw);
 }
 
-/* 🌟 全息掃描線動態氛圍 */
-#hud::before {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 200%;
-    pointer-events: none;
-    background: repeating-linear-gradient(
-        0deg,
-        transparent,
-        transparent 3px,
-        rgba(0, 229, 255, 0.02) 3px,
-        rgba(0, 229, 255, 0.02) 4px
-    );
-    animation: scanLine 6s linear infinite;
-    z-index: 1;
-}
-
-@keyframes scanLine {
-    0% { transform: translateY(-50%); }
-    100% { transform: translateY(0%); }
-}
-
-/* 4a. HUD 標題與控制列 */
 .hud-header {
     display: flex;
     align-items: center;
-    gap: clamp(6px, 1vw, 12px);
+    gap: 8px;
     pointer-events: auto;
     flex-wrap: wrap;
-    position: relative;
-    z-index: 2;
 }
 
 .hud-title {
     color: var(--color-primary);
     font-weight: 800;
-    font-size: clamp(12px, 1.8vw, 16px);
-    letter-spacing: 0.5px;
+    font-size: clamp(12px, 1.6vw, 15px);
     text-shadow: 0 0 10px var(--color-primary-glow);
     display: flex;
     align-items: center;
 }
 
-/* 🌟 品牌 Signature 能量標記 */
-.hud-title::before {
-    content: "⚡";
-    margin-right: 4px;
-    display: inline-block;
-    animation: pulseGlow 2s ease-in-out infinite;
-}
-
-@keyframes pulseGlow {
-    0%, 100% { transform: scale(1); filter: drop-shadow(0 0 2px var(--color-primary)); }
-    50% { transform: scale(1.15); filter: drop-shadow(0 0 8px var(--color-primary)); }
-}
-
 .header-controls {
     display: flex;
-    gap: clamp(4px, 0.8vw, 8px);
+    gap: 6px;
     align-items: center;
-    flex-wrap: wrap;
 }
 
-/* 4b. 交互按鈕 */
 .lang-btn {
     background: var(--color-primary-dim);
     border: 1px solid var(--color-primary);
     color: var(--color-primary);
-    font-size: clamp(10px, 1.2vw, 12px);
+    font-size: 11px;
     padding: 3px 8px;
     border-radius: var(--radius-sm);
     cursor: pointer;
-    backdrop-filter: blur(6px);
-    transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+    backdrop-filter: blur(8px);
+    transition: 0.2s;
 }
 
-.lang-btn:hover {
-    background: rgba(0, 229, 255, 0.25);
-    box-shadow: 0 0 8px var(--color-primary-glow);
-}
+.lang-btn:active { transform: scale(0.95); }
 
-.lang-btn:active {
-    transform: scale(0.95);
-}
-
-/* 4c. 狀態標籤與極限狀態動畫 */
 .hud-status {
     background: rgba(0, 170, 255, 0.15);
     border: 1px solid #00aaff;
     color: #00aaff;
-    font-size: clamp(10px, 1vw, 11px);
-    padding: 2px 7px;
+    font-size: 11px;
+    padding: 2px 6px;
     border-radius: var(--radius-sm);
-    transition: all 0.3s ease;
 }
 
-/* 🌟 S 級完成：金色能量爆發 */
-.hud-status.rank-s {
-    background: rgba(255, 215, 0, 0.25);
-    border-color: var(--color-gold);
-    color: var(--color-gold);
-    box-shadow: 0 0 20px var(--color-gold-glow);
-    animation: rankSGlow 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes rankSGlow {
-    0% { transform: scale(1.8); opacity: 0; }
-    50% { transform: scale(1.1); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-}
-
-/* 🌟 失敗/危急：紅光警報脈衝 */
-.hud-status.fail {
-    background: rgba(255, 0, 68, 0.25);
-    border-color: var(--color-danger);
-    color: var(--color-danger);
-    box-shadow: 0 0 15px var(--color-danger-glow);
-    animation: failPulse 0.6s ease-in-out infinite;
-}
-
-@keyframes failPulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.4; transform: scale(0.96); }
-}
-
-/* 4d. 任務指示卡 (含呼吸邊框與專屬水印) */
+/* 任務提示卡 */
 .mission-card {
-    background: var(--color-surface);
-    border: 1px solid rgba(0, 229, 255, 0.25);
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-glass-border);
     border-left: 3px solid var(--color-primary);
     border-radius: var(--radius-md);
-    padding: clamp(8px, 1.2vh, 12px) clamp(10px, 1.5vw, 16px);
-    backdrop-filter: blur(8px);
+    padding: 8px 12px;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
     pointer-events: auto;
-    width: 100%;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-    position: relative;
-    animation: borderPulse 4s ease-in-out infinite;
-    z-index: 2;
-}
-
-@keyframes borderPulse {
-    0%, 100% { border-left-color: var(--color-primary); }
-    50% { border-left-color: rgba(0, 229, 255, 0.3); }
-}
-
-/* 🌟 J.A.R. 專屬研發水印 */
-.mission-card::after {
-    content: "J.A.R. MATRIX // v10.0";
-    position: absolute;
-    bottom: 3px;
-    right: 8px;
-    font-size: 8px;
-    color: rgba(0, 229, 255, 0.25);
-    font-family: monospace;
-    letter-spacing: 1px;
-    pointer-events: none;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 .mission-title {
-    color: var(--color-text);
+    color: #fff;
     font-weight: bold;
-    font-size: clamp(12px, 1.4vw, 14px);
-    margin-bottom: 3px;
+    font-size: 12px;
 }
 
 .mission-desc {
     color: var(--color-primary);
-    font-size: clamp(11px, 1.2vw, 13px);
-    margin-bottom: 3px;
+    font-size: 11px;
+    margin-top: 2px;
 }
 
 .view-hint {
     color: var(--color-text-dim);
-    font-size: clamp(9px, 0.9vw, 11px);
+    font-size: 9px;
+    margin-top: 2px;
 }
 
 /* ============================================================
-   5. 雙搖桿與動作按鈕 (觸控與 PC 同步置頂)
+   3. 🌟 實時遙測面板（可折疊 + 毛玻璃高透明 + 角落停靠）
+   ============================================================ */
+.telemetry-glass-panel {
+    position: absolute;
+    top: clamp(65px, 9vh, 90px);
+    left: env(safe-area-inset-left, 14px);
+    width: clamp(230px, 28vw, 290px);
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-glass-border);
+    border-radius: var(--radius-md);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    z-index: 25;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
+    overflow: hidden;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 12px;
+    background: rgba(0, 229, 255, 0.08);
+    border-bottom: 1px solid rgba(0, 229, 255, 0.15);
+    cursor: pointer;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #fff;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.fps-tag {
+    color: #00ff66;
+    font-size: 10px;
+    font-family: monospace;
+    font-weight: bold;
+}
+
+.toggle-collapse-btn {
+    background: transparent;
+    border: none;
+    color: var(--color-primary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: transform 0.2s;
+}
+
+/* 🌟 折疊狀態樣式 (只留一行精巧標籤) */
+.telemetry-glass-panel.collapsed {
+    width: auto;
+    min-width: 170px;
+    background: rgba(4, 14, 28, 0.75);
+}
+
+.telemetry-glass-panel.collapsed .panel-body {
+    display: none;
+}
+
+.panel-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* 空間座標 2x2 網格 */
+.telemetry-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px 10px;
+    font-family: monospace;
+    font-size: 11px;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 8px;
+    border-radius: var(--radius-sm);
+}
+
+.telemetry-grid .label { color: var(--color-text-dim); }
+.telemetry-grid .val { color: var(--color-primary); font-weight: bold; }
+.telemetry-grid .unit { color: var(--color-text-dim); font-size: 9px; margin-left: 2px; }
+
+/* 物理指標 */
+.telemetry-metrics {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11px;
+}
+
+.metric-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.metric-row .label { color: var(--color-text-dim); }
+.metric-row .val { color: #fff; font-family: monospace; font-weight: bold; }
+.metric-row .error-val { color: #ff5555; }
+.metric-row .power-val { color: #00e5ff; }
+
+/* 操作按鈕群 */
+.panel-actions {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.action-btn {
+    flex: 1;
+    background: rgba(0, 229, 255, 0.08);
+    border: 1px solid rgba(0, 229, 255, 0.3);
+    color: #fff;
+    font-size: 10px;
+    padding: 5px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: 0.2s;
+}
+
+.action-btn:hover { background: rgba(0, 229, 255, 0.2); }
+.action-btn.active {
+    background: rgba(255, 0, 68, 0.25);
+    border-color: var(--color-danger);
+    color: #ff4466;
+}
+
+.btn-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #00e5ff;
+}
+.action-btn.active .btn-dot {
+    background: #ff0044;
+    box-shadow: 0 0 6px #ff0044;
+}
+
+/* ============================================================
+   4. J.A.R. AI 對話框 (置底適配)
+   ============================================================ */
+#jar-dialogue {
+    position: absolute;
+    bottom: clamp(120px, 16vh, 150px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--color-glass-bg);
+    border: 1px solid var(--color-primary);
+    border-left: 4px solid var(--color-primary);
+    border-radius: var(--radius-md);
+    padding: 10px 16px;
+    width: 86%;
+    max-width: 440px;
+    z-index: 20;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+}
+
+/* ============================================================
+   5. 雙搖桿與動作按鈕
    ============================================================ */
 .controls-overlay {
     position: absolute;
@@ -271,34 +328,30 @@ body, html {
     pointer-events: none;
 }
 
-/* 左搖桿 (水平平移) */
 #joy-left {
     position: absolute;
-    bottom: clamp(16px, 4vh, 32px);
-    left: clamp(16px, 3vw, 36px);
-    width: clamp(85px, 12vw, 115px);
-    height: clamp(85px, 12vw, 115px);
-    background: rgba(0, 229, 255, 0.05);
-    border: 2px dashed rgba(0, 229, 255, 0.3);
+    bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    left: max(20px, env(safe-area-inset-left, 20px));
+    width: clamp(80px, 11vw, 110px);
+    height: clamp(80px, 11vw, 110px);
+    background: rgba(0, 229, 255, 0.04);
+    border: 2px dashed rgba(0, 229, 255, 0.25);
     border-radius: var(--radius-full);
     pointer-events: auto;
     touch-action: none;
-    transition: border-color 0.2s, background 0.2s;
 }
 
-/* 右搖桿 (垂直升降) */
 #joy-right {
     position: absolute;
-    bottom: clamp(16px, 4vh, 32px);
-    right: clamp(100px, 14vw, 145px);
-    width: clamp(85px, 12vw, 115px);
-    height: clamp(85px, 12vw, 115px);
-    background: rgba(0, 229, 255, 0.05);
-    border: 2px dashed rgba(0, 229, 255, 0.3);
+    bottom: max(20px, env(safe-area-inset-bottom, 20px));
+    right: clamp(95px, 13vw, 140px);
+    width: clamp(80px, 11vw, 110px);
+    height: clamp(80px, 11vw, 110px);
+    background: rgba(0, 229, 255, 0.04);
+    border: 2px dashed rgba(0, 229, 255, 0.25);
     border-radius: var(--radius-full);
     pointer-events: auto;
     touch-action: none;
-    transition: border-color 0.2s, background 0.2s;
 }
 
 .joy-knob {
@@ -306,61 +359,72 @@ body, html {
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    width: clamp(34px, 4.5vw, 46px);
-    height: clamp(34px, 4.5vw, 46px);
-    background: radial-gradient(circle, #00e5ff 0%, #007799 100%);
+    width: clamp(34px, 4.2vw, 44px);
+    height: clamp(34px, 4.2vw, 44px);
+    background: radial-gradient(circle, #00e5ff 0%, #006688 100%);
     border-radius: var(--radius-full);
-    box-shadow: 0 0 16px rgba(0, 229, 255, 0.5);
+    box-shadow: 0 0 15px rgba(0, 229, 255, 0.4);
     pointer-events: none;
 }
 
-/* 🌟 右下角 GRIP 動作按鈕 */
 #btn-grip {
     position: absolute;
-    bottom: clamp(18px, 4.2vh, 36px);
-    right: clamp(16px, 3vw, 32px);
-    width: clamp(68px, 9vw, 84px);
-    height: clamp(68px, 9vw, 84px);
-    background: radial-gradient(circle, #ff9100 0%, #d84315 100%);
+    bottom: max(22px, env(safe-area-inset-bottom, 22px));
+    right: max(16px, env(safe-area-inset-right, 16px));
+    width: clamp(66px, 8.5vw, 82px);
+    height: clamp(66px, 8.5vw, 82px);
+    background: radial-gradient(circle, #ff9100 0%, #c83b00 100%);
     border: 2px solid #ffab40;
     border-radius: var(--radius-full);
     color: #fff;
     font-weight: 900;
-    font-size: clamp(13px, 1.6vw, 16px);
-    letter-spacing: 0.5px;
+    font-size: clamp(13px, 1.5vw, 16px);
     display: flex;
     justify-content: center;
     align-items: center;
     box-shadow: 0 0 25px rgba(255, 145, 0, 0.4);
     cursor: pointer;
     pointer-events: auto;
-    transition: transform 0.08s ease, box-shadow 0.2s ease;
+    transition: transform 0.08s ease;
 }
 
-#btn-grip:hover {
-    box-shadow: 0 0 35px rgba(255, 145, 0, 0.65);
-}
-
-#btn-grip:active {
-    transform: scale(0.92);
-    box-shadow: 0 0 12px rgba(255, 145, 0, 0.8);
-}
+#btn-grip:active { transform: scale(0.9); }
 
 /* ============================================================
-   6. 窄螢幕與橫向極限響應式適配
+   6. 🌟 橫向屏幕專屬優化 (Landscape Mode Layout)
    ============================================================ */
-@media (max-height: 500px) {
+@media (orientation: landscape) {
+    /* 遙測面板自動靠右上角，徹底避開左側搖桿 */
+    .telemetry-glass-panel {
+        top: max(10px, env(safe-area-inset-top, 10px));
+        left: auto;
+        right: max(14px, env(safe-area-inset-right, 14px));
+        width: 240px;
+        transform: scale(0.92);
+        transform-origin: top right;
+    }
+
+    /* 頂部導航與任務卡緊湊置於左上角 */
     #hud {
-        gap: 4px;
-        top: 6px;
+        top: max(10px, env(safe-area-inset-top, 10px));
+        left: max(14px, env(safe-area-inset-left, 14px));
+        max-width: 260px;
     }
-    .mission-card {
-        padding: 4px 8px;
+
+    /* AI 對話框改置於正上方居中，不擋中央機械臂視線 */
+    #jar-dialogue {
+        bottom: auto;
+        top: max(10px, env(safe-area-inset-top, 10px));
+        left: 50%;
+        transform: translateX(-50%);
+        width: auto;
+        min-width: 260px;
+        max-width: 360px;
+        padding: 6px 12px;
     }
-    #joy-left, #joy-right {
-        bottom: 8px;
-    }
-    #btn-grip {
-        bottom: 10px;
+
+    #jar-text {
+        font-size: 11px !important;
+        min-height: 20px !important;
     }
 }
