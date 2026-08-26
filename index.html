@@ -2,56 +2,20 @@
 <html lang="zh-HK">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#020810">
 
-    <meta name="google-site-verification" content="JZ5UohX-CcP_fQV0_DI9VadkKY4ZoTTkUifL88-fIcY" />
-
     <title>J.A.R. 在手之上 3D | Beyond the Hand 3D</title>
-    <meta name="description" content="J.A.R. Beyond the Hand 3D is an open-source, zero-asset 6-DoF robotic arm simulator featuring real-time CCD-IK, dynamic telemetry, and modal frequency FFT analysis.">
-    <meta name="keywords" content="J.A.R., Joint Applied Research, 聯合應用科學探索, Beyond the Hand, Robotic Arm Simulator, Three.js, WebGL, CCD-IK, 6-DoF, Telemetry, FFT">
-    <meta name="author" content="Jacky Law">
-    <meta name="robots" content="index, follow">
-    <link rel="canonical" href="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
-
-    <meta property="og:type" content="website">
-    <meta property="og:url" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
-    <meta property="og:title" content="J.A.R. 在手之上 3D | Beyond the Hand 3D">
-    <meta property="og:description" content="高保真 WebGL 6-DoF 工業與科研機械臂沙盒，支援實時 IK 逆向運動學求解與科研遙測數據採集。">
-    <meta property="og:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
-
-    <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:url" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
-    <meta name="twitter:title" content="J.A.R. Beyond the Hand 3D | Joint Applied Research">
-    <meta name="twitter:description" content="High-fidelity 3D WebGL robotic arm simulator with real-time CCD-IK and dynamic FFT telemetry.">
-    <meta name="twitter:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
-
-    <script type="application/ld+json">
-    {
-      "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "J.A.R. Beyond the Hand 3D",
-      "alternateName": "J.A.R. 在手之上 3D - 聯合應用科學探索",
-      "url": "https://jackylawck.github.io/JAR-Beyond-the-Hand/",
-      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator.",
-      "applicationCategory": "EducationalApplication, SimulationApplication",
-      "operatingSystem": "All"
-    }
-    </script>
-
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net; connect-src 'self'; img-src 'self' data: blob:;">
+    <meta name="description" content="J.A.R. Beyond the Hand 3D is an open-source, zero-asset 6-DoF robotic arm simulator.">
 
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="jarBeyondtheHand192icon.png">
-    <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
     <link rel="apple-touch-icon" href="jarBeyondtheHand192icon.png">
 
-    <!-- 強制載入最新 CSS -->
-    <link rel="stylesheet" href="css/style.css?v=2026.99">
-
+    <!-- 🌟 Import Map -->
     <script type="importmap">
     {
       "imports": {
@@ -60,9 +24,389 @@
       }
     }
     </script>
+
+    <!-- 🌟 核心修復：直接內嵌完整 3A 級樣式，徹底杜絕 CSS 載入失敗與跑版 -->
+    <style>
+        :root {
+            --color-primary: #00e5ff;
+            --color-primary-dim: rgba(0, 229, 255, 0.18);
+            --color-primary-glow: rgba(0, 229, 255, 0.6);
+            --color-accent: #ff9100;
+            --color-hud-bg: rgba(4, 12, 24, 0.92);
+            --color-border: rgba(0, 229, 255, 0.45);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            word-break: normal;
+            overflow-wrap: break-word;
+            white-space: normal;
+        }
+
+        html, body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background-color: #020810;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            position: fixed;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* 頂部導航與任務指示 (左上角) */
+        #hud {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 10px) + 12px);
+            left: max(10px, env(safe-area-inset-left, 10px));
+            z-index: 30;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-width: min(340px, 86vw);
+        }
+
+        .hud-header {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: auto;
+            background: var(--color-hud-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            padding: 8px 12px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.7);
+        }
+
+        .hud-title {
+            color: var(--color-primary);
+            font-weight: 900;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            text-shadow: 0 0 10px var(--color-primary-glow);
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .lang-btn {
+            background: var(--color-primary-dim);
+            border: 1px solid var(--color-primary);
+            color: #ffffff;
+            font-weight: bold;
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .lang-btn:active { transform: scale(0.95); }
+
+        .hud-status {
+            background: rgba(0, 255, 100, 0.15);
+            border: 1px solid #00ff66;
+            color: #00ff66;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 3px 6px;
+            border-radius: 4px;
+        }
+
+        .mission-card {
+            background: var(--color-hud-bg);
+            border: 1px solid var(--color-border);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 8px 12px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            pointer-events: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+        }
+
+        .mission-title { color: #fff; font-weight: bold; font-size: 12px; }
+        .mission-desc { color: var(--color-primary); font-size: 11px; margin-top: 2px; line-height: 1.3; }
+        .view-hint { color: #8899aa; font-size: 9px; margin-top: 3px; }
+
+        /* 🌟 實時遙測面板 (支援收起折疊) */
+        .telemetry-glass-panel {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 10px) + 148px);
+            left: max(10px, env(safe-area-inset-left, 10px));
+            width: clamp(230px, 28vw, 280px);
+            background: var(--color-hud-bg);
+            border: 1px solid var(--color-border);
+            border-radius: 8px;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            z-index: 25;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+            overflow: hidden;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 10px;
+            background: rgba(0, 229, 255, 0.12);
+            border-bottom: 1px solid rgba(0, 229, 255, 0.2);
+            cursor: pointer;
+        }
+
+        .header-left { display: flex; align-items: center; gap: 6px; color: #fff; font-size: 12px; font-weight: bold; }
+        .header-right { display: flex; align-items: center; gap: 6px; }
+        .fps-tag { color: #00ff66; font-size: 10px; font-family: monospace; font-weight: bold; }
+
+        .toggle-collapse-btn {
+            background: rgba(0, 229, 255, 0.15);
+            border: 1px solid var(--color-primary);
+            color: #00e5ff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .telemetry-glass-panel.collapsed { width: auto; min-width: 170px; }
+        .telemetry-glass-panel.collapsed .panel-body { display: none; }
+
+        .panel-body { padding: 8px 10px; display: flex; flex-direction: column; gap: 6px; }
+
+        .telemetry-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4px 8px;
+            font-family: monospace;
+            font-size: 11px;
+            background: rgba(0, 0, 0, 0.45);
+            padding: 5px 8px;
+            border-radius: 4px;
+        }
+
+        .telemetry-grid .label { color: #8899aa; }
+        .telemetry-grid .val { color: var(--color-primary); font-weight: bold; }
+        .telemetry-grid .unit { color: #8899aa; font-size: 9px; margin-left: 2px; }
+
+        .telemetry-metrics { display: flex; flex-direction: column; gap: 3px; font-size: 11px; }
+        .metric-row { display: flex; justify-content: space-between; align-items: center; }
+        .metric-row .label { color: #8899aa; }
+        .metric-row .val { color: #fff; font-family: monospace; font-weight: bold; }
+        .metric-row .error-val { color: #ff5555; }
+        .metric-row .power-val { color: #00e5ff; }
+
+        .panel-actions { display: flex; gap: 6px; margin-top: 3px; }
+
+        .action-btn-sub {
+            flex: 1;
+            background: rgba(0, 229, 255, 0.12);
+            border: 1px solid rgba(0, 229, 255, 0.35);
+            color: #fff;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            transition: 0.2s;
+        }
+
+        .action-btn-sub:hover { background: rgba(0, 229, 255, 0.25); }
+        .action-btn-sub.active { background: rgba(255, 0, 68, 0.3); border-color: #ff0044; color: #ff4466; }
+
+        .btn-dot { width: 6px; height: 6px; border-radius: 50%; background: #00e5ff; }
+        .action-btn-sub.active .btn-dot { background: #ff0044; box-shadow: 0 0 6px #ff0044; }
+        .telemetry-footer { font-size: 9px; color: #8899aa; text-align: center; margin-top: 2px; }
+
+        /* J.A.R. AI 對話框 */
+        #jar-dialogue {
+            position: absolute;
+            bottom: clamp(120px, 16vh, 150px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--color-hud-bg);
+            border: 1px solid var(--color-primary);
+            border-left: 4px solid var(--color-primary);
+            border-radius: 8px;
+            padding: 10px 14px;
+            width: 86%;
+            max-width: 440px;
+            z-index: 20;
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6);
+        }
+
+        #jar-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-size: 11px; font-weight: bold; color: var(--color-primary); }
+        .online-tag { background: rgba(0, 255, 100, 0.2); border: 1px solid #00ff66; color: #00ff66; font-size: 9px; padding: 1px 4px; border-radius: 3px; }
+        #jar-text { color: #fff; font-size: 12px; line-height: 1.4; white-space: normal; word-break: normal; overflow-wrap: break-word; }
+
+        /* 雙搖桿與 GRIP 按鈕 */
+        .controls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
+
+        #joy-left {
+            position: absolute;
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            left: max(20px, env(safe-area-inset-left, 20px));
+            width: clamp(80px, 11vw, 110px);
+            height: clamp(80px, 11vw, 110px);
+            background: rgba(0, 229, 255, 0.05);
+            border: 2px dashed rgba(0, 229, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joy-right {
+            position: absolute;
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            right: clamp(95px, 13vw, 140px);
+            width: clamp(80px, 11vw, 110px);
+            height: clamp(80px, 11vw, 110px);
+            background: rgba(0, 229, 255, 0.05);
+            border: 2px dashed rgba(0, 229, 255, 0.3);
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        .joy-knob {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: clamp(34px, 4.2vw, 44px);
+            height: clamp(34px, 4.2vw, 44px);
+            background: radial-gradient(circle, #00e5ff 0%, #006688 100%);
+            border-radius: 50%;
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+            pointer-events: none;
+        }
+
+        #btn-grip {
+            position: absolute;
+            bottom: max(22px, env(safe-area-inset-bottom, 22px));
+            right: max(16px, env(safe-area-inset-right, 16px));
+            width: clamp(66px, 8.5vw, 82px);
+            height: clamp(66px, 8.5vw, 82px);
+            background: radial-gradient(circle, #ff9100 0%, #c83b00 100%);
+            border: 2px solid #ffab40;
+            border-radius: 50%;
+            color: #fff;
+            font-weight: 900;
+            font-size: clamp(13px, 1.5vw, 16px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 25px rgba(255, 145, 0, 0.45);
+            cursor: pointer;
+            pointer-events: auto;
+            transition: transform 0.08s ease;
+        }
+
+        #btn-grip:active { transform: scale(0.9); }
+
+        /* 模式切換彈窗 */
+        #mode-selector {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 100;
+            width: 100%;
+            height: 100%;
+            background: rgba(4, 10, 20, 0.94);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #mode-selector h2 { color: #00e5ff; font-size: 22px; margin-bottom: 4px; }
+        #mode-selector p { color: #8899aa; font-size: 13px; margin-bottom: 20px; }
+
+        .mode-cards-wrap { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+
+        .mode-card {
+            background: rgba(0, 229, 255, 0.05);
+            border: 2px solid rgba(0, 229, 255, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            width: 140px;
+            cursor: pointer;
+            text-align: center;
+            transition: 0.2s;
+        }
+
+        .mode-card:hover { border-color: #00e5ff; background: rgba(0, 229, 255, 0.12); }
+        .mode-card .icon { font-size: 32px; }
+        .mode-card h3 { color: #fff; font-size: 14px; margin: 8px 0 2px; }
+        .mode-card p { color: #8899aa; font-size: 11px; margin: 0; }
+
+        #btn-close-modal {
+            margin-top: 20px;
+            background: transparent;
+            border: 1px solid #557788;
+            color: #8899aa;
+            padding: 6px 18px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        /* 橫屏優化 */
+        @media (orientation: landscape) {
+            #hud { top: max(10px, env(safe-area-inset-top, 10px)); left: max(12px, env(safe-area-inset-left, 12px)); max-width: 250px; }
+            .telemetry-glass-panel {
+                top: max(10px, env(safe-area-inset-top, 10px));
+                left: auto;
+                right: max(12px, env(safe-area-inset-right, 12px));
+                width: 235px;
+                transform: scale(0.92);
+                transform-origin: top right;
+            }
+            #jar-dialogue {
+                bottom: auto;
+                top: max(10px, env(safe-area-inset-top, 10px));
+                left: 50%;
+                transform: translateX(-50%);
+                width: auto;
+                min-width: 260px;
+                max-width: 380px;
+                padding: 6px 12px;
+            }
+            #jar-text { font-size: 11px; }
+        }
+    </style>
 </head>
 <body>
-    <!-- 模式選擇器 Modal -->
+    <!-- 模式選擇器 Modal (預設隱藏) -->
     <div id="mode-selector">
         <h2 id="modal-title">⚡ 切換任務模式</h2>
         <p id="modal-desc">請選擇即將載入的自動化領域</p>
@@ -89,7 +433,7 @@
     <!-- 3D 渲染容器 -->
     <div id="canvas-container"></div>
     
-    <!-- 🌟 左上角獨立精巧 HUD -->
+    <!-- 左上角 HUD -->
     <div id="hud">
         <div class="hud-header">
             <div class="hud-title" id="app-hud-title">⚡ J.A.R. 在手之上 3D</div>
@@ -106,7 +450,7 @@
         </div>
     </div>
 
-    <!-- 🌟 J.A.R. AI 對話視窗 -->
+    <!-- J.A.R. AI 對話框 -->
     <div id="jar-dialogue">
         <div id="jar-title">
             <span id="jar-title-text">J.A.R. 系統助理</span>
@@ -115,7 +459,7 @@
         <div id="jar-text">...</div>
     </div>
 
-    <!-- 雙搖桿與動作按鈕 -->
+    <!-- 雙搖桿與 GRIP 按鈕 -->
     <div class="controls-overlay">
         <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
