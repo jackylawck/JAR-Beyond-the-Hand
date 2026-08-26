@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { POOL } from './Pool.js';
 import { AudioEngine } from './AudioEngine.js';
 import { ArmBuilder } from '../kinematics/ArmBuilder.js';
@@ -28,7 +29,8 @@ export class MainController {
     }
 
     init() {
-        this.controls = new THREE.OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
+        // 🌟 正確使用模組化 OrbitControls
+        this.controls = new OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
         this.controls.target.set(0, 0.6, 0.2);
@@ -70,26 +72,22 @@ export class MainController {
         });
     }
 
-    // 🌟 靜態/動態牛頓-歐拉力矩估算 (Joint Torque Estimation)
     _estimateJointTorques(angles, isSecured) {
-        const payloadMass = isSecured ? 2.5 : 0.0; // 抓取時附加 2.5kg 負載
+        const payloadMass = isSecured ? 2.5 : 0.0;
         const g = 9.81;
 
-        // 連桿質量與臂長參數
-        const m1 = 1.8, L1 = 1.1; // 大臂
-        const m2 = 1.2, L2 = 0.8; // 前臂
-        const m3 = 0.6;          // 腕部
+        const m1 = 1.8, L1 = 1.1;
+        const m2 = 1.2, L2 = 0.8;
+        const m3 = 0.6;
 
-        const theta1 = angles[1] || 0; // 肩關節俯仰
-        const theta2 = angles[2] || 0; // 肘關節俯仰
+        const theta1 = angles[1] || 0;
+        const theta2 = angles[2] || 0;
 
-        // 計算力臂
         const r1 = (L1 / 2) * Math.sin(theta1);
         const r2 = L1 * Math.sin(theta1) + (L2 / 2) * Math.sin(theta1 + theta2);
         const rEnd = L1 * Math.sin(theta1) + L2 * Math.sin(theta1 + theta2);
 
-        // 各關節靜態重力力矩 (N·m)
-        const tau0 = 0.8; // 基座迴轉阻尼
+        const tau0 = 0.8;
         const tau2 = Math.abs((m2 * g * (L2 / 2) + (m3 + payloadMass) * g * L2) * Math.sin(theta1 + theta2));
         const tau1 = Math.abs(m1 * g * r1 + m2 * g * r2 + (m3 + payloadMass) * g * rEnd);
         const tau3 = Math.abs((m3 + payloadMass) * g * 0.15);
@@ -115,7 +113,6 @@ export class MainController {
 
         CCDIKSolver.solve(this.armData.ikBones, this.armData.endEffector, this.targetPos, 4, 0.8);
 
-        // 液壓與套筒物理聯動
         if (this.armData.extensionRod && this.armData.joint2) {
             const currentDist = this.targetPos.length();
             const extendRatio = Math.max(0.0, Math.min(0.45, (currentDist - 1.0) * 0.4));
@@ -127,7 +124,6 @@ export class MainController {
             }
         }
 
-        // 夾爪非線性開合
         const targetOpen = this.mission.clawOpen ? 1.0 : 0.0;
         this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * (14.0 * dt);
         const ease = (t) => t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
@@ -136,18 +132,15 @@ export class MainController {
         this.armData.clawLeft.position.x = -offset;
         this.armData.clawRight.position.x = offset;
 
-        // LED 狀態燈
         if (this.armData.statusLed) {
             this.armData.statusLed.material.color.setHex(this.mission.isSecured ? 0x00ff66 : 0xff7700);
         }
 
         this.audio.setMotorPitch(intensity);
 
-        // 提取關節角並估算力矩
         const jointAngles = this._getJointAngles();
         const torques = this._estimateJointTorques(jointAngles, this.mission.isSecured);
 
-        // 實時推播科研級遙測
         this.hud.update(this.targetPos, this.armData, this.mission, intensity, jointAngles, torques);
 
         if (this.controls) this.controls.update();
