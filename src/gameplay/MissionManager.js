@@ -25,9 +25,10 @@ export class MissionManager {
 
         if (jarBox && jarText) {
             jarBox.style.display = 'block';
-            if (this.mode === 'kid') jarText.innerText = t.jarKidWelcome;
-            else if (this.mode === 'advanced') jarText.innerText = t.jarAdvWelcome;
-            else jarText.innerText = t.jarResWelcome;
+            let welcome = t.jarKidWelcome;
+            if (this.mode === 'advanced') welcome = t.jarAdvWelcome;
+            else if (this.mode === 'research') welcome = t.jarResWelcome;
+            jarText.innerText = welcome;
         }
     }
 
@@ -36,9 +37,10 @@ export class MissionManager {
         const t = I18N[lang];
         const jarText = document.getElementById('jar-text');
         if (jarText) {
-            if (this.mode === 'kid') jarText.innerText = t.jarKidWelcome;
-            else if (this.mode === 'advanced') jarText.innerText = t.jarAdvWelcome;
-            else jarText.innerText = t.jarResWelcome;
+            let welcome = t.jarKidWelcome;
+            if (this.mode === 'advanced') welcome = t.jarAdvWelcome;
+            else if (this.mode === 'research') welcome = t.jarResWelcome;
+            jarText.innerText = welcome;
         }
     }
 
@@ -55,7 +57,6 @@ export class MissionManager {
     }
 
     update(dt, targetPos, intensity) {
-        // 抓取物跟隨夾爪
         if (this.isSecured && this.targetObj) {
             this.targetObj.position.copy(targetPos);
             this.targetObj.position.y -= 0.12;
