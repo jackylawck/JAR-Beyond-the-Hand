@@ -5,41 +5,66 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#00e5ff">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="在手之上">
     <title>J.A.R. 在手之上 3D ｜ DUM-E 手遊</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Three.js CDN -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 <body>
+    <!-- 1. 史塔克開機啟動畫面 -->
+    <div id="splash-screen" style="position:absolute; z-index:1000; width:100%; height:100%; background:#040810; display:flex; flex-direction:column; justify-content:center; align-items:center; transition:opacity 1.0s;">
+        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:6px; font-weight:800; text-shadow:0 0 30px rgba(0,229,255,0.4);">⚡ STARK LAB</h1>
+        <p style="color:#8899aa; font-size:12px; letter-spacing:3px; margin-top:6px;">J.A.R. BEYOND THE HAND</p>
+        <div style="margin-top:24px; width:44px; height:44px; border:2px solid #00e5ff; border-top-color:transparent; border-radius:50%; animation:spin 1s linear infinite;"></div>
+        <p style="color:#556677; font-size:10px; margin-top:16px;">INITIALIZING SYSTEMS...</p>
+    </div>
+
     <div id="canvas-container"></div>
 
-    <!-- 史塔克全息 HUD -->
+    <!-- 2. 全息 HUD 與動態引導 -->
     <div id="hud">
         <div class="hud-header">
             <div class="hud-title">⚡ STARK LAB // DUM-E</div>
             <div id="status-tag" class="hud-status">SYSTEM READY</div>
         </div>
         <div class="mission-card">
-            <div class="mission-title">MISSION 01: 方舟反應爐</div>
-            <div id="mission-text" class="mission-desc">推動搖桿抓住核心，安裝至右側光圈槽位！</div>
+            <div class="mission-title">PRIMARY OBJECTIVE</div>
+            <div id="mission-guidance" style="font-size:13px; font-weight:bold; color:#00e5ff; margin-top:3px;">🎯 移向前方發光核心</div>
         </div>
         <div></div>
     </div>
 
-    <!-- 手機虛擬雙搖桿與夾爪按鈕 -->
+    <!-- 3. 雙搖桿與按鈕 -->
     <div class="controls-overlay">
-        <div id="joy-left" class="joystick-zone">
-            <div id="knob-left" class="joy-knob"></div>
-        </div>
-        <div id="joy-right" class="joystick-zone">
-            <div id="knob-right" class="joy-knob"></div>
-        </div>
+        <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
+        <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- ES Module 模組化入口 -->
+    <!-- 4. 結算畫面 (Victory Modal) -->
+    <div id="success-screen" style="display:none; position:absolute; z-index:100; top:50%; left:50%; transform:translate(-50%,-50%); background:rgba(4,12,24,0.95); border:2px solid #00ff66; border-radius:12px; padding:24px 32px; text-align:center; backdrop-filter:blur(12px); box-shadow:0 0 40px rgba(0,255,100,0.3);">
+        <div style="font-size:40px;">🏆</div>
+        <h2 style="color:#00ff66; font-size:20px; margin:8px 0;">MISSION ACCOMPLISHED</h2>
+        <p style="color:#88ccdd; font-size:13px;">方舟反應爐成功激活！史塔克實驗室能源已滿載。</p>
+        <div style="display:flex; gap:16px; margin-top:16px; justify-content:center;">
+            <span style="color:#8899aa; font-size:12px;">⏱️ 用時: <span id="final-time" style="color:#00e5ff; font-weight:bold;">--</span>s</span>
+            <span style="color:#8899aa; font-size:12px;">🎯 評級: <span style="color:#00ff66; font-weight:bold;">S RANK</span></span>
+        </div>
+        <button onclick="location.reload()" style="margin-top:18px; padding:8px 24px; background:#00e5ff; border:none; border-radius:6px; color:#040810; font-weight:bold; font-size:13px; cursor:pointer;">🔄 重新挑戰</button>
+    </div>
+
+    <style>
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+
+    <script>
+        setTimeout(() => {
+            const splash = document.getElementById('splash-screen');
+            if (splash) {
+                splash.style.opacity = '0';
+                setTimeout(() => splash.style.display = 'none', 1000);
+            }
+        }, 1200);
+    </script>
     <script type="module" src="src/main.js"></script>
 </body>
 </html>
