@@ -3,13 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>J.A.R. 在手之上 3D ｜ Beyond the Hand 3D</title>
+    <title>J.A.R. 職業模擬器 ｜ Beyond the Hand 3D</title>
     <link rel="stylesheet" href="css/style.css">
-    <!-- Three.js + OrbitControls -->
+    <!-- 確保載入全域 Three.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
 </head>
 <body>
+    <!-- 🌟 全新：模式選擇啟動畫面 -->
+    <div id="mode-selector" style="position:absolute; z-index:100; width:100%; height:100%; background:rgba(4,10,20,0.95); backdrop-filter:blur(20px); display:flex; flex-direction:column; justify-content:center; align-items:center; transition: opacity 0.6s;">
+        <h1 style="color:#00e5ff; font-size:28px; letter-spacing:4px; font-weight:800; margin-bottom: 5px;">⚡ J.A.R. 工業模擬器</h1>
+        <p style="color:#8899aa; margin-bottom:30px;">請選擇你的自動化任務領域</p>
+        
+        <div style="display:flex; gap:20px; flex-wrap:wrap; justify-content:center;">
+            <div class="mode-card" data-mode="kid" style="background:rgba(0,229,255,0.05); border:2px solid rgba(0,229,255,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
+                <div style="font-size:42px;">🍓</div>
+                <h3 style="color:#fff; margin:12px 0 6px;">兒童模式</h3>
+                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">農業精準採摘</p>
+                <span style="display:inline-block; background:rgba(0,229,255,0.2); color:#00e5ff; font-size:11px; padding:4px 10px; border-radius:12px; font-weight:bold;">高容錯磁吸</span>
+            </div>
+            <div class="mode-card" data-mode="advanced" style="background:rgba(255,145,0,0.05); border:2px solid rgba(255,145,0,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
+                <div style="font-size:42px;">📱</div>
+                <h3 style="color:#fff; margin:12px 0 6px;">進階模式</h3>
+                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">3C 精密組裝</p>
+                <span style="display:inline-block; background:rgba(255,145,0,0.2); color:#ff9100; font-size:11px; padding:4px 10px; border-radius:12px; font-weight:bold;">中度容錯</span>
+            </div>
+            <div class="mode-card" data-mode="research" style="background:rgba(255,61,0,0.05); border:2px solid rgba(255,61,0,0.3); border-radius:12px; padding:25px; width:190px; cursor:pointer; text-align:center; transition:0.3s;">
+                <div style="font-size:42px;">🧪</div>
+                <h3 style="color:#fff; margin:12px 0 6px;">科研模式</h3>
+                <p style="color:#8899aa; font-size:12px; margin-bottom:10px;">實驗室自動化</p>
+                <span style="display:inline-block; background:rgba(255,61,0,0.2); color:#ff3d00; font-size:11px; padding:4px 10px; border-radius:12px; font-weight:bold;">極限零輔助</span>
+            </div>
+        </div>
+    </div>
+
     <div id="canvas-container"></div>
 
     <!-- 全息 HUD -->
@@ -18,13 +45,13 @@
             <div class="hud-title">⚡ J.A.R. LAB // ARM-01</div>
             <div class="header-controls">
                 <button id="lang-btn" class="lang-btn">🌐 EN / 中文</button>
-                <div id="status-tag" class="hud-status">SYSTEM READY</div>
+                <div id="status-tag" class="hud-status">系統就緒</div>
             </div>
         </div>
         <div class="mission-card">
-            <div id="mission-title" class="mission-title">MISSION 01: 量子核心裝配</div>
-            <div id="mission-desc" class="mission-desc">🎯 移向前方發光核心</div>
-            <div id="view-hint" class="view-hint">💡 360° 拖曳視角 / 雙指縮放觀察工業細節</div>
+            <div id="mission-title" class="mission-title">載入中...</div>
+            <div id="mission-desc" class="mission-desc">請先選擇模式</div>
+            <div id="view-hint" class="view-hint">💡 滑動可旋轉視角</div>
         </div>
         <div></div>
     </div>
@@ -36,7 +63,6 @@
         <div id="btn-grip" class="action-btn">GRIP</div>
     </div>
 
-    <!-- 🌟 關鍵：必須帶 type="module" 才能加載 src/main.js -->
     <script type="module" src="src/main.js"></script>
 </body>
 </html>
