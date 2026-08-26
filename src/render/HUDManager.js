@@ -14,11 +14,9 @@ export class HUDManager {
         this.missionTitle = document.getElementById('mission-title');
         this.missionDesc = document.getElementById('mission-desc');
 
-        // 安全取得當前語言設定
-        const currentLang = (this.config?.getLang?.()) || localStorage.getItem('beyond-lang') || 'zh';
+        const currentLang = this.config?.getLang?.() || localStorage.getItem('beyond-lang') || 'zh';
         this.updateLanguage(currentLang, mission);
 
-        // 進階/科研模式掛載數據遙測面板 (安全檢查)
         if (this.config?.getLevel?.() && this.config.getLevel() !== 'kid') {
             this._mountTelemetryPanel();
         }
@@ -67,7 +65,7 @@ export class HUDManager {
 
     updateStatus(statusKey) {
         if (!this.statusTag) return;
-        const currentLang = (this.config?.getLang?.()) || localStorage.getItem('beyond-lang') || 'zh';
+        const currentLang = this.config?.getLang?.() || localStorage.getItem('beyond-lang') || 'zh';
         const dict = I18N[currentLang] || I18N.zh;
         this.statusTag.innerText = dict[statusKey] || statusKey;
     }
