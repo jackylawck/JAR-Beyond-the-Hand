@@ -29,10 +29,12 @@ We warmly invite friends, educators, and robotics enthusiasts to step into the s
 * **靜力學關節力矩估算 ($\tau_i$)**：實時計算連桿重力力矩與末端負載力矩（$N \cdot m$），支援馬達選型與負載安全監控。
 
 
+
 * **🔬 科研級即時遙測與數據採集 (Research-Grade Telemetry & Data Acquisition)**：
 * **6-DoF 軌跡數據記錄與 CSV 導出**：一鍵記錄時間戳、空間坐標、四軸關節角、即時力矩、追蹤誤差與功耗，便於導入 MATLAB / Python 進行科學分析。
 * **64 點滑動窗口 FFT 頻譜分析**：即時離散傅立葉變換（DFT/FFT），鎖定機械臂末端振動的一階共振頻率（Hz）。
 * **不確定度量化 (Uncertainty Quantification)**：即時統計末端位姿誤差均值、標準差與 $95\%$ 信心區間（$\text{Mean} \pm \text{CI}_{95\%}$）。
+
 
 
 * **🕹️ 3A 級雙模態操作手感 (Responsive Control Architecture)**：
@@ -42,9 +44,11 @@ We warmly invite friends, educators, and robotics enthusiasts to step into the s
 * **關鍵閾值微觸覺回饋 (Haptic Feedback)**：跨越死區、觸及邊界極限及氣動抓取時觸發原生微震動反饋。
 
 
+
 * **⚡ 60FPS 零垃圾回收架構 (Zero-GC Architecture)**：
 * 徹底消除主動畫迴圈（`animate` / `solve`）內的堆記憶體分配（Heap Allocations），全數運算複用靜態向量與矩陣池（`Pool.js`）。
 * 杜絕 JavaScript 垃圾回收引發的畫面掉幀，在行動裝置與低功耗設備上維持持續穩定的 60FPS 幀率。
+
 
 
 * **🎨 全息 HUD、自適應場景與多語言支援 (Holographic HUD, Adaptive Scenarios & i18n)**：
