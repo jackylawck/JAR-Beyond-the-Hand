@@ -3,12 +3,11 @@ export class ImpactFXManager {
         this.scene = scene;
         this.camera = camera;
 
-        // 相機震動狀態
         this.shakeDuration = 0;
         this.shakeIntensity = 0;
         this.shakeTime = 0;
 
-        // 靜態粒子池 (Zero-GC Particle Pool: 120 顆)
+        // 靜態粒子池 (Zero-GC: 120 顆火花)
         this.particleCount = 120;
         this.pPositions = new Float32Array(this.particleCount * 3);
         this.pVelocities = new Float32Array(this.particleCount * 3);
@@ -32,7 +31,7 @@ export class ImpactFXManager {
         }
     }
 
-    triggerShake(intensity = 0.05, duration = 0.2) {
+    triggerShake(intensity = 0.04, duration = 0.2) {
         this.shakeIntensity = intensity;
         this.shakeDuration = duration;
         this.shakeTime = 0;
@@ -48,7 +47,6 @@ export class ImpactFXManager {
             this.pPositions[idx + 1] = pos.y;
             this.pPositions[idx + 2] = pos.z;
 
-            // 隨機球形初速度
             const theta = Math.random() * Math.PI * 2;
             const phi = Math.acos(Math.random() * 2 - 1);
             const speed = 1.2 + Math.random() * 2.0;
@@ -63,7 +61,7 @@ export class ImpactFXManager {
     }
 
     update(dt) {
-        // 1. 更新相機震動
+        // 相機震動
         if (this.shakeTime < this.shakeDuration && this.camera) {
             this.shakeTime += dt;
             const progress = this.shakeTime / this.shakeDuration;
@@ -72,7 +70,7 @@ export class ImpactFXManager {
             this.camera.position.y += (Math.random() - 0.5) * currentMag;
         }
 
-        // 2. 更新粒子生命週期與重力
+        // 火花微重力粒子生命週期
         let hasActive = false;
         for (let i = 0; i < this.particleCount; i++) {
             if (this.pLifetimes[i] > 0) {
