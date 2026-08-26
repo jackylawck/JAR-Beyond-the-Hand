@@ -12,23 +12,31 @@ import { ModelDropZone } from '../ugc/ModelDropZone.js';
 
 export class MainController {
     constructor(config, sceneManager, errorBoundary) {
-        this.config = config;
-        this.scene = sceneManager;
-        this.errorBoundary = errorBoundary;
+        // 支援 (sceneManager) 或 (config, sceneManager, errorBoundary) 雙重重載
+        if (config && config.scene && config.camera) {
+            this.sceneMgr = config;
+            this.config = null;
+            this.errorBoundary = sceneManager || null;
+        } else {
+            this.config = config;
+            this.sceneMgr = sceneManager;
+            this.errorBoundary = errorBoundary;
+        }
+
         this.clock = new THREE.Clock();
         this.isRunning = false;
         this.rafId = null;
 
-        // Zero-Allocation 目標位置 (IK Target) 與基準坐標
+        // Zero-Allocation 目標位置 (IK Target)
         this.targetPos = new THREE.Vector3(0, 1.9, 1.5);
         this.idleTime = 0;
 
-        // 注入基礎子系統
+        // 注入基礎子系統 (安全取用 SceneManager 內部屬性)
         this.audio = new AudioEngine();
-        this.inputMapper = new InputMapper(config);
-        this.hud = new HUDManager(config);
-        this.fx = new ImpactFXManager(this.scene.scene, this.scene.camera);
-        this.atmosphere = new AtmosphereFX(this.scene.scene);
+        this.inputMapper = new InputMapper(this.config);
+        this.hud = new HUDManager(this.config);
+        this.fx = new ImpactFXManager(this.sceneMgr.scene, this.sceneMgr.camera);
+        this.atmosphere = new AtmosphereFX(this.sceneMgr.scene);
 
         // 核心組件實例
         this.armData = null;
@@ -42,7 +50,7 @@ export class MainController {
         try {
             // 1. 初始化 360° 軌道控制器 (支援多角度觀察)
             if (typeof THREE.OrbitControls !== 'undefined') {
-                this.controls = new THREE.OrbitControls(this.scene.camera, this.scene.renderer.domElement);
+                this.controls = new THREE.OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
                 this.controls.enableDamping = true;
                 this.controls.dampingFactor = 0.08;
                 this.controls.target.set(0, 1.1, 0.4);
@@ -52,7 +60,7 @@ export class MainController {
             }
 
             // 2. 構建機械臂與場景幾何
-            this.armData = ArmBuilder.build(this.scene.scene);
+            this.armData = ArmBuilder.build(this.sceneMgr.scene);
 
             // 3. 任務管理器
             this.mission = new MissionManager(
@@ -110,6 +118,9 @@ export class MainController {
         if (this.hud && this.hud.updateLanguage) {
             this.hud.updateLanguage(lang, this.mission);
         }
+        if (this.mission && this.mission.setLanguage) {
+            this.mission.setLanguage(lang);
+        }
     }
 
     animate() {
@@ -119,32 +130,32 @@ export class MainController {
         const rawDt = Math.min(this.clock.getDelta(), 0.05);
         const timeScale = this.mission ? (this.mission.timeScale || 1.0) : 1.0;
         const dt = rawDt * timeScale;
-        const camera = this.scene.camera;
+        const camera = this.sceneMgr.camera;
         this.idleTime += dt;
 
-        // 1. 機械臂待機微動作 (修正高度漂移：使用振幅微調而非持續累加)
+        // 1. 機械臂待機微動作 (修正累加漂移問題)
         const intensity = this.inputMapper.getIntensity();
         if (intensity < 0.01 && !this.mission.isSecured && !this.mission.isIgniting) {
             const idleOffset = Math.sin(this.idleTime * 1.8) * 0.003;
             this.targetPos.y += idleOffset;
         }
 
-        // 2. 核心呼吸脈衝光
+        // 2. 核心呼吸發光動畫
         if (this.armData.coreGlow) {
             const pulse = 1.0 + Math.sin(this.idleTime * 3.2) * 0.15;
             this.armData.coreGlow.scale.set(pulse, pulse, pulse);
         }
 
-        // 3. 環境大氣微塵與能量流動光節點
+        // 3. 環境大氣浮塵與能量流動槽更新
         this.atmosphere.update(dt);
 
-        // 4. 操控映射 (基於當前視角平移)
+        // 4. 操控映射 (基於當前視角前後左右平移)
         this.inputMapper.update(this.targetPos, dt, camera);
 
         // 5. 任務狀態、磁吸與點火序列
         this.mission.update(dt, this.targetPos);
 
-        // 6. 阻尼 CCD-IK 逆運動學解算
+        // 6. 阻尼 CCD-IK 逆運動學解算 (帶預設回退安全值)
         const ikIterations = this.config?.get?.('ik.iterations') || 3;
         const ikDamping = this.config?.get?.('ik.damping') || 0.7;
         CCDIKSolver.solve(
@@ -171,7 +182,7 @@ export class MainController {
         this.hud.update(this.targetPos, this.armData, this.mission);
 
         // 12. WebGL 畫面渲染
-        this.scene.render();
+        this.sceneMgr.render();
     }
 
     _updateGripper() {
@@ -231,7 +242,7 @@ export class MainController {
         if (this.rafId) cancelAnimationFrame(this.rafId);
 
         if (this.controls) this.controls.dispose();
-        this.scene.dispose();
+        this.sceneMgr.dispose();
         this.audio.dispose?.();
         this.hud.dispose?.();
         this.fx.dispose?.();
