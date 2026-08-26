@@ -1,6 +1,3 @@
-/**
- * 全域靜態向量池，杜絕主迴圈內 new / clone 造成的垃圾回收卡頓
- */
 export const POOL = {
     v1: new THREE.Vector3(),
     v2: new THREE.Vector3(),
