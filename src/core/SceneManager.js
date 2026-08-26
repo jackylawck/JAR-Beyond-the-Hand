@@ -16,35 +16,33 @@ export class SceneManager {
         this.renderer.toneMappingExposure = 1.4;
         this.renderer.shadowMap.enabled = true;
         this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-
-        // 掛載 canvas
         this.container.appendChild(this.renderer.domElement);
 
         this._buildLighting();
-        this._buildIndustrialFactoryScene();
+        this._buildIndustrialScene();
         this._bindResize();
     }
 
     _buildLighting() {
         this.scene.add(new THREE.AmbientLight(0x223348, 1.8));
 
-        const mainSpot = new THREE.SpotLight(0xffffff, 4.8, 22, Math.PI / 3.5, 0.4, 1.2);
-        mainSpot.position.set(3.5, 8, 4.5);
-        mainSpot.castShadow = true;
-        mainSpot.shadow.mapSize.width = 1024;
-        mainSpot.shadow.mapSize.height = 1024;
-        this.scene.add(mainSpot);
+        const spot = new THREE.SpotLight(0xffffff, 4.8, 22, Math.PI / 3.5, 0.4, 1.2);
+        spot.position.set(3.5, 8, 4.5);
+        spot.castShadow = true;
+        spot.shadow.mapSize.width = 1024;
+        spot.shadow.mapSize.height = 1024;
+        this.scene.add(spot);
 
-        const rimLight = new THREE.DirectionalLight(0x00e5ff, 3.6);
-        rimLight.position.set(-6, 6, -5);
-        this.scene.add(rimLight);
+        const rim = new THREE.DirectionalLight(0x00e5ff, 3.6);
+        rim.position.set(-6, 6, -5);
+        this.scene.add(rim);
 
-        const warmBounce = new THREE.DirectionalLight(0xff6600, 1.3);
-        warmBounce.position.set(4, -1, 3);
-        this.scene.add(warmBounce);
+        const warm = new THREE.DirectionalLight(0xff6600, 1.3);
+        warm.position.set(4, -1, 3);
+        this.scene.add(warm);
     }
 
-    _buildIndustrialFactoryScene() {
+    _buildIndustrialScene() {
         const wallMat = new THREE.MeshStandardMaterial({ color: 0x0a0f16, metalness: 0.85, roughness: 0.4 });
         const frameMat = new THREE.MeshStandardMaterial({ color: 0x16202c, metalness: 0.95, roughness: 0.2 });
         const pipeMat = new THREE.MeshStandardMaterial({ color: 0x242e3a, metalness: 0.9, roughness: 0.3 });
@@ -66,7 +64,7 @@ export class SceneManager {
             }
         }
 
-        for (let y of [2.2, 4.8, 6.4]) {
+        for (const y of [2.2, 4.8, 6.4]) {
             const pipe = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 24, 16), pipeMat);
             pipe.rotation.z = Math.PI / 2;
             pipe.position.set(0, y, -7.5);
@@ -78,17 +76,15 @@ export class SceneManager {
         this.scene.add(wallStrip);
 
         for (let z = -4; z <= 4; z += 4) {
-            const lightBar = new THREE.Mesh(
-                new THREE.BoxGeometry(12, 0.15, 0.3),
-                new THREE.MeshBasicMaterial({ color: 0xffffff })
-            );
+            const lightBar = new THREE.Mesh(new THREE.BoxGeometry(12, 0.15, 0.3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
             lightBar.position.set(0, 7.8, z);
             this.scene.add(lightBar);
         }
 
-        const floorGeo = new THREE.CylinderGeometry(3.5, 3.7, 0.2, 48);
-        const floorMat = new THREE.MeshStandardMaterial({ color: 0x141b24, metalness: 0.9, roughness: 0.3 });
-        const floor = new THREE.Mesh(floorGeo, floorMat);
+        const floor = new THREE.Mesh(
+            new THREE.CylinderGeometry(3.5, 3.7, 0.2, 48),
+            new THREE.MeshStandardMaterial({ color: 0x141b24, metalness: 0.9, roughness: 0.3 })
+        );
         floor.position.y = -0.1;
         floor.receiveShadow = true;
         this.scene.add(floor);
@@ -111,17 +107,22 @@ export class SceneManager {
             new THREE.SpriteMaterial({
                 map: (() => {
                     const c = document.createElement('canvas');
-                    c.width = 512; c.height = 128;
+                    c.width = 512;
+                    c.height = 128;
                     const ctx = c.getContext('2d');
-                    ctx.fillStyle = 'transparent'; ctx.fillRect(0, 0, 512, 128);
+                    ctx.fillStyle = 'transparent';
+                    ctx.fillRect(0, 0, 512, 128);
                     ctx.font = '800 38px "Segoe UI", sans-serif';
-                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-                    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 18;
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#00e5ff';
+                    ctx.shadowBlur = 18;
                     ctx.fillStyle = '#00e5ff';
                     ctx.fillText('⚡ J.A.R. ROBOTICS // LAB-01', 256, 64);
                     return new THREE.CanvasTexture(c);
                 })(),
-                transparent: true, depthWrite: false
+                transparent: true,
+                depthWrite: false
             })
         );
         labelSprite.position.set(0, 0.06, 1.7);
