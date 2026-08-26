@@ -1,5 +1,3 @@
-import { POOL } from '../core/Pool.js';
-
 export class ImpactFXManager {
     constructor(scene, camera) {
         this.scene = scene;
@@ -29,7 +27,9 @@ export class ImpactFXManager {
 
         this.particleSystem = new THREE.Points(geo, mat);
         this.particleSystem.frustumCulled = false;
-        this.scene.add(this.particleSystem);
+        if (this.scene) {
+            this.scene.add(this.particleSystem);
+        }
     }
 
     triggerShake(intensity = 0.05, duration = 0.2) {
@@ -39,7 +39,9 @@ export class ImpactFXManager {
     }
 
     triggerBurst(pos, colorHex = 0x00e5ff) {
+        if (!this.particleSystem || !pos) return;
         this.particleSystem.material.color.setHex(colorHex);
+
         for (let i = 0; i < this.particleCount; i++) {
             const idx = i * 3;
             this.pPositions[idx] = pos.x;
@@ -55,14 +57,14 @@ export class ImpactFXManager {
             this.pVelocities[idx + 1] = Math.sin(phi) * Math.sin(theta) * speed;
             this.pVelocities[idx + 2] = Math.cos(phi) * speed;
 
-            this.pLifetimes[i] = 0.4 + Math.random() * 0.3; // 壽命 (s)
+            this.pLifetimes[i] = 0.4 + Math.random() * 0.3;
         }
         this.particleSystem.geometry.attributes.position.needsUpdate = true;
     }
 
     update(dt) {
         // 1. 更新相機震動
-        if (this.shakeTime < this.shakeDuration) {
+        if (this.shakeTime < this.shakeDuration && this.camera) {
             this.shakeTime += dt;
             const progress = this.shakeTime / this.shakeDuration;
             const currentMag = (1 - progress) * this.shakeIntensity;
@@ -77,13 +79,21 @@ export class ImpactFXManager {
                 this.pLifetimes[i] -= dt;
                 const idx = i * 3;
                 this.pPositions[idx] += this.pVelocities[idx] * dt;
-                this.pPositions[idx + 1] += this.pVelocities[idx + 1] * dt - 1.5 * dt * dt; // 微重力
+                this.pPositions[idx + 1] += this.pVelocities[idx + 1] * dt - 1.5 * dt * dt;
                 this.pPositions[idx + 2] += this.pVelocities[idx + 2] * dt;
                 hasActive = true;
             }
         }
-        if (hasActive) {
+        if (hasActive && this.particleSystem) {
             this.particleSystem.geometry.attributes.position.needsUpdate = true;
+        }
+    }
+
+    dispose() {
+        if (this.particleSystem && this.scene) {
+            this.scene.remove(this.particleSystem);
+            this.particleSystem.geometry.dispose();
+            this.particleSystem.material.dispose();
         }
     }
 }
