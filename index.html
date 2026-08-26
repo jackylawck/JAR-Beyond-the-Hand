@@ -25,7 +25,7 @@
     <style>
         :root {
             --color-primary: #00e5ff;
-            --color-bg-dark: rgba(3, 10, 22, 0.88);
+            --color-bg-dark: rgba(3, 10, 22, 0.92);
             --color-border: rgba(0, 229, 255, 0.4);
         }
 
@@ -56,18 +56,18 @@
             z-index: 1;
         }
 
-        /* 🌟 1. 頂部極簡全息即時數據長條 (置頂、不擋視線) */
+        /* 🌟 頂部全息數據長條（強制單行、彈性適配寬度） */
         #top-telemetry-bar {
             position: absolute;
-            top: calc(env(safe-area-inset-top, 10px) + 8px);
+            top: calc(env(safe-area-inset-top, 10px) + 6px);
             left: 50%;
             transform: translateX(-50%);
-            width: 94%;
+            width: calc(100% - 24px);
             max-width: 520px;
             background: var(--color-bg-dark);
             border: 1px solid var(--color-border);
-            border-radius: 20px;
-            padding: 6px 14px;
+            border-radius: 18px;
+            padding: 6px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -79,18 +79,22 @@
 
         .bar-left {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             font-size: 11px;
             color: #fff;
             font-family: monospace;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .bar-left span b { color: var(--color-primary); }
         .bar-left .err-tag { color: #ff5555; font-weight: bold; }
 
         .bar-right {
             display: flex;
-            gap: 6px;
+            gap: 5px;
             align-items: center;
+            flex-shrink: 0;
         }
 
         .mini-btn {
@@ -99,22 +103,23 @@
             color: #fff;
             font-size: 10px;
             font-weight: bold;
-            padding: 3px 8px;
-            border-radius: 12px;
+            padding: 3px 6px;
+            border-radius: 10px;
             cursor: pointer;
+            white-space: nowrap;
         }
 
-        /* 🌟 2. 極簡單行任務提示 (細字居中浮動) */
+        /* 單行緊湊任務提示 */
         #compact-mission-tip {
             position: absolute;
-            top: calc(env(safe-area-inset-top, 10px) + 48px);
+            top: calc(env(safe-area-inset-top, 10px) + 46px);
             left: 50%;
             transform: translateX(-50%);
             background: rgba(4, 12, 24, 0.75);
             border: 1px solid rgba(0, 229, 255, 0.25);
             color: #00e5ff;
             font-size: 11px;
-            padding: 4px 14px;
+            padding: 3px 12px;
             border-radius: 12px;
             z-index: 25;
             backdrop-filter: blur(8px);
@@ -123,7 +128,7 @@
             white-space: nowrap;
         }
 
-        /* 🌟 3. AI 提示框 (置底、4秒後自動淡出，不礙事) */
+        /* AI 提示框 (短暫提示) */
         #jar-dialogue {
             position: absolute;
             bottom: clamp(120px, 16vh, 140px);
@@ -144,7 +149,7 @@
         #jar-title { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--color-primary); margin-bottom: 2px; }
         #jar-text { color: #fff; font-size: 12px; line-height: 1.3; }
 
-        /* 🌟 4. 雙搖桿與 GRIP 按鈕 */
+        /* 雙搖桿與動作按鈕 */
         .controls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
 
         #joy-left {
@@ -242,7 +247,6 @@
     </style>
 </head>
 <body>
-    <!-- 模式選擇器 Modal -->
     <div id="mode-selector">
         <h2>⚡ 切換任務模式</h2>
         <p>請選擇即將載入的自動化領域</p>
@@ -266,17 +270,16 @@
         <button id="btn-close-modal">關閉</button>
     </div>
 
-    <!-- 3D 渲染容器 -->
     <div id="canvas-container"></div>
     
-    <!-- 🌟 1. 頂部極簡即時數據長條 -->
+    <!-- 頂部單行數據列 -->
     <div id="top-telemetry-bar">
         <div class="bar-left">
             <span>X:<b id="top-val-x">0.00</b></span>
             <span>Y:<b id="top-val-y">0.00</b></span>
             <span>Z:<b id="top-val-z">0.00</b></span>
-            <span>R:<b id="top-val-r">0.00</b>m</span>
-            <span>誤差:<b id="top-val-err" class="err-tag">0.00</b></span>
+            <span>R:<b id="top-val-r">0.00</b></span>
+            <span>Err:<b id="top-val-err" class="err-tag">0.00</b></span>
         </div>
         <div class="bar-right">
             <button id="btn-switch-mode" class="mini-btn">🔀 模式</button>
@@ -284,10 +287,8 @@
         </div>
     </div>
 
-    <!-- 🌟 2. 單行緊湊任務提示 -->
     <div id="compact-mission-tip">🍓 初熟草莓 ｜ 移動夾爪至上方按下 GRIP</div>
 
-    <!-- 🌟 3. AI 提示框 (短暫提示) -->
     <div id="jar-dialogue">
         <div id="jar-title">
             <span>J.A.R. 系統助理</span>
@@ -296,7 +297,6 @@
         <div id="jar-text">你好！我已經準備好幫你摘士多啤梨啦～ 🍓</div>
     </div>
 
-    <!-- 雙搖桿與動作按鈕 -->
     <div class="controls-overlay">
         <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
         <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
@@ -305,7 +305,6 @@
 
     <script type="module" src="src/main.js"></script>
     <script>
-        // AI 提示框顯示 5 秒後自動淡出，點擊頂部可重新喚醒
         setTimeout(() => {
             const jar = document.getElementById('jar-dialogue');
             if (jar) jar.style.opacity = '0';
