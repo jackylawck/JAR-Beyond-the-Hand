@@ -5,20 +5,22 @@ export class HUDManager {
         this.dom = {};
         this.mode = 'kid';
         this.lang = 'zh';
-        this.recordedData = [];
     }
 
     init(mode = 'kid') {
         this.mode = mode;
+        
+        // 🌟 徹底清理舊版遺留的殘餘 DOM，防止遮擋畫面
+        const oldPanel = document.getElementById('telemetry-panel');
+        if (oldPanel) oldPanel.remove();
+
         this.dom = {
             valX: document.getElementById('top-val-x'),
             valY: document.getElementById('top-val-y'),
             valZ: document.getElementById('top-val-z'),
             valR: document.getElementById('top-val-r'),
             valErr: document.getElementById('top-val-err'),
-            valFps: document.getElementById('top-val-fps'),
             missionTip: document.getElementById('compact-mission-tip'),
-            btnSwitch: document.getElementById('btn-switch-mode'),
             btnLang: document.getElementById('lang-btn')
         };
         this.setLanguage(this.lang);
