@@ -1,11 +1,10 @@
-name: Deploy to GitHub Pages
+name: CI/CD Pipeline & GitHub Pages Deploy
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-    types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
 permissions:
@@ -15,64 +14,67 @@ permissions:
   pull-requests: write
 
 concurrency:
-  group: "pages"
+  group: "pages-${{ github.ref }}"
   cancel-in-progress: true
 
 jobs:
   # ============================================================
-  # Job 1: 驗證與構建 (運行喺 PR 同 push)
+  # Job 1: 靜態檢查與檔案完整性驗證 (Lint & File Integrity)
   # ============================================================
-  build:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup Node.js Environment
         uses: actions/setup-node@v4
         with:
-          node-version: '20'                              # 🔒 鎖定版本
-          cache: 'npm'
+          node-version: '20'
 
-      - name: Install dependencies
+      - name: Verify Critical Project Files
         run: |
-          npm install -g eslint
-          echo "✅ 依賴安裝完成"
-
-      - name: Lint JavaScript
-        run: |
-          npx eslint src/**/*.js --max-warnings=0 || echo "⚠️ Lint 警告，但繼續部署"
-        continue-on-error: true
-
-      - name: Verify critical files exist
-        run: |
-          for file in index.html manifest.json service-worker.js src/main.js; do
+          echo "🔍 檢查核心架構檔案..."
+          REQUIRED_FILES=(
+            "index.html"
+            "manifest.json"
+            "service-worker.js"
+            "css/style.css"
+            "src/main.js"
+            "src/core/ConfigManager.js"
+            "src/core/SceneManager.js"
+            "src/core/MainController.js"
+            "src/kinematics/ArmBuilder.js"
+            "src/kinematics/CCDIKSolver.js"
+            "src/physics/InertiaCalculator.js"
+            "src/physics/HomogenizationEngine.js"
+            "src/physics/MultibodyDynamics.js"
+          )
+          for file in "${REQUIRED_FILES[@]}"; do
             if [ ! -f "$file" ]; then
-              echo "❌ 缺失必要檔案: $file"
+              echo "❌ 嚴重錯誤: 缺失必要模組 $file"
               exit 1
             fi
           done
-          echo "✅ 所有必要檔案存在"
+          echo "✅ 核心模組完整性驗證通過！"
 
-      - name: Upload build artifact (for PR preview)
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr-preview-${{ github.event.number }}
-          path: '.'
+      - name: Quick ES Syntax Validation
+        run: |
+          node --check src/main.js
+          echo "✅ main.js 語法正確"
 
-      - name: Upload Pages artifact (for production)
+      - name: Upload Artifact for Production
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: actions/upload-pages-artifact@v3
         with:
           path: '.'
 
   # ============================================================
-  # Job 2: 部署到 GitHub Pages (只喺 main branch push 時執行)
+  # Job 2: 部署到 GitHub Pages (僅 main 分支推送觸發)
   # ============================================================
   deploy:
+    needs: validate
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -82,44 +84,36 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-      - name: Create deployment tag
+      - name: Checkout for Tagging
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create Release Audit Tag
         run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           TIMESTAMP=$(date +'%Y%m%d-%H%M%S')
-          git tag "deploy-$TIMESTAMP"
+          git tag -a "deploy-$TIMESTAMP" -m "Automated deployment on $TIMESTAMP"
           git push origin "deploy-$TIMESTAMP"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   # ============================================================
-  # Job 3: 部署預覽評論 (PR 自動留言)
+  # Job 3: PR 驗證回饋 (自動在 PR 留下檢查報告)
   # ============================================================
-  preview:
+  pr-feedback:
+    needs: validate
     if: github.event_name == 'pull_request'
-    needs: build
     runs-on: ubuntu-latest
     steps:
-      - name: Download PR artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: pr-preview-${{ github.event.number }}
-          path: ./preview
-
-      - name: Deploy to PR preview
-        uses: peaceiris/actions-gh-pages@v3
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: ./preview
-          destination_dir: pr-${{ github.event.number }}
-          keep_files: false
-
-      - name: Comment PR with preview link
+      - name: Comment PR
         uses: actions/github-script@v7
         with:
           script: |
-            const url = `https://${context.repo.owner}.github.io/${context.repo.repo}/pr-${context.issue.number}/`;
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 **PR Preview 已部署！**\n\n點擊連結預覽改動：\n🔗 ${url}\n\n（此為自動部署，僅供測試用途）`
+              body: `### ⚡ J.A.R. CI 驗證通過\n\n- ✅ **核心模組校驗**: 所有檔案結構皆完整\n- ✅ **JS 語法檢查**: 通過 Node.js 20 解析\n- 🚀 **部署準備**: 合併到 \`main\` 後將自動發布至 GitHub Pages！`
             });
