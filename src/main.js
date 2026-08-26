@@ -2,21 +2,17 @@ import { SceneManager } from './core/SceneManager.js';
 import { MainController } from './core/MainController.js';
 import { I18N } from './config/i18n.js';
 
-// 1. 初始化場景管理器
 const sceneManager = new SceneManager('canvas-container');
-
-// 2. 初始化主控制器
-const app = new MainController(sceneManager);
+const app = new MainController(null, sceneManager, null);
 app.init();
 
-// 3. 雙語即時切換邏輯
-let currentLang = 'zh';
+let currentLang = localStorage.getItem('beyond-lang') || 'zh';
 const langBtn = document.getElementById('lang-btn');
 
 function updateLangUI(lang) {
     currentLang = lang;
-    const dict = I18N[lang];
-    if (!dict) return;
+    localStorage.setItem('beyond-lang', lang);
+    const dict = I18N[lang] || I18N.zh;
 
     const titleEl = document.querySelector('.hud-title');
     const missionTitleEl = document.getElementById('mission-title');
@@ -39,5 +35,5 @@ if (langBtn) {
     });
 }
 
-updateLangUI('zh');
+updateLangUI(currentLang);
 window.__app = app;
