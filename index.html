@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#020810">
 
-    <!-- 🛡️ 企業級 CSP (合規 HTML Meta 規範) -->
+    <!-- 🛡️ 企業級 CSP -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline';
@@ -52,7 +52,7 @@
     <meta name="twitter:description" content="High-fidelity 3D WebGL robotic arm simulator with real-time CCD-IK and dynamic FFT telemetry.">
     <meta name="twitter:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
 
-    <!-- 🔍 Google 結構化資料 (Schema.org JSON-LD) -->
+    <!-- 🔍 Google 結構化資料 -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -66,7 +66,7 @@
     }
     </script>
 
-    <!-- 📲 完整跨平台 PWA 與 Favicon 集合 -->
+    <!-- 📲 完整跨平台 PWA 與 Favicon -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="jarBeyondtheHand192icon.png">
     <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
@@ -86,7 +86,6 @@
         :root {
             --color-primary: #00e5ff;
             --color-primary-dim: rgba(0, 229, 255, 0.18);
-            --color-primary-glow: rgba(0, 229, 255, 0.6);
             --color-accent: #ff9100;
             --color-bg-dark: rgba(3, 10, 22, 0.92);
             --color-border: rgba(0, 229, 255, 0.4);
@@ -115,21 +114,15 @@
 
         #canvas-container {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 1;
         }
 
         /* 🌟 1. 全息 Loading 載入螢幕 */
         #loading-screen {
             position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 90;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; z-index: 90;
+            width: 100%; height: 100%;
             background: #020810;
             display: flex;
             flex-direction: column;
@@ -139,8 +132,7 @@
         }
 
         .loader-ring {
-            width: 48px;
-            height: 48px;
+            width: 48px; height: 48px;
             border: 2px solid rgba(0, 229, 255, 0.2);
             border-top-color: #00e5ff;
             border-radius: 50%;
@@ -153,19 +145,8 @@
             100% { transform: rotate(360deg); }
         }
 
-        .loader-text {
-            color: #8899aa;
-            font-size: 12px;
-            margin-top: 16px;
-            letter-spacing: 1px;
-        }
-
-        .loader-sub {
-            color: #557788;
-            font-size: 10px;
-            margin-top: 4px;
-            font-family: monospace;
-        }
+        .loader-text { color: #8899aa; font-size: 12px; margin-top: 16px; letter-spacing: 1px; }
+        .loader-sub { color: #557788; font-size: 10px; margin-top: 4px; font-family: monospace; }
 
         /* 🌟 2. 頂部全息動態數據列 */
         #top-telemetry-bar {
@@ -232,10 +213,7 @@
             color: var(--color-primary);
             animation: dataFlicker 5s ease-in-out infinite;
         }
-        .bar-left .err-tag {
-            color: #ff5555;
-            font-weight: bold;
-        }
+        .bar-left .err-tag { color: #ff5555; font-weight: bold; }
 
         @keyframes dataFlicker {
             0%, 100% { opacity: 1; }
@@ -267,10 +245,7 @@
             transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .mini-btn:active {
-            transform: scale(0.92);
-            background: rgba(0, 229, 255, 0.35);
-        }
+        .mini-btn:active { transform: scale(0.92); background: rgba(0, 229, 255, 0.35); }
 
         /* 🌟 3. 單行任務指示 */
         #compact-mission-tip {
@@ -292,6 +267,7 @@
             text-align: center;
             white-space: nowrap;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s ease;
         }
 
         /* 🌟 4. PC 鍵盤提示指南 */
@@ -315,7 +291,7 @@
             white-space: nowrap;
         }
 
-        /* 🌟 5. AI 對話框 (附帶平滑位移與銷毀動畫) */
+        /* 🌟 5. AI 對話框 */
         #jar-dialogue {
             position: absolute;
             bottom: clamp(125px, 17vh, 150px);
@@ -338,7 +314,27 @@
         #jar-title { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--color-primary); margin-bottom: 2px; }
         #jar-text { color: #fff; font-size: 12px; line-height: 1.3; }
 
-        /* 🌟 6. 控制層與觸控按鈕 */
+        /* 🌟 6. 科研專屬數據流面板 */
+        #research-data-panel {
+            display: none;
+            position: absolute;
+            bottom: clamp(110px, 15vh, 135px);
+            right: max(16px, env(safe-area-inset-right, 16px));
+            background: rgba(4, 12, 24, 0.92);
+            border: 1px solid #00e5ff;
+            border-radius: 8px;
+            padding: 8px 12px;
+            min-width: 210px;
+            font-family: monospace;
+            font-size: 10px;
+            color: #88ccdd;
+            z-index: 25;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            pointer-events: auto;
+        }
+
+        /* 🌟 7. 控制層與觸控按鈕 */
         .controls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
 
         .joystick-zone {
@@ -376,16 +372,13 @@
         }
 
         .joystick-zone.active::after {
-            width: 130%;
-            height: 130%;
-            opacity: 0;
+            width: 130%; height: 130%; opacity: 0;
             transition: width 0.15s ease-out, height 0.15s ease-out, opacity 0.15s ease-out;
         }
 
         .joy-knob {
             position: absolute;
-            top: 50%;
-            left: 50%;
+            top: 50%; left: 50%;
             transform: translate(-50%, -50%);
             width: clamp(34px, 4.2vw, 44px);
             height: clamp(34px, 4.2vw, 44px);
@@ -418,7 +411,7 @@
 
         #btn-grip:active { transform: scale(0.9); }
 
-        /* 🌟 7. 全局 Error Boundary 面板 */
+        /* 🌟 8. 全局 Error Boundary 面板 */
         #error-boundary {
             display: none;
             position: absolute;
@@ -485,7 +478,7 @@
             #compact-mission-tip { top: calc(env(safe-area-inset-top, 10px) + 38px); font-size: 10px; }
             #keyboard-hint { display: none; }
             #jar-dialogue { bottom: auto; top: max(10px, env(safe-area-inset-top, 10px)); left: 50%; width: auto; min-width: 260px; max-width: 380px; padding: 6px 12px; }
-            #jar-text { font-size: 11px; }
+            #research-data-panel { bottom: auto; top: max(6px, env(safe-area-inset-top, 6px)); right: max(12px, env(safe-area-inset-right, 12px)); }
         }
     </style>
 </head>
@@ -559,6 +552,19 @@
         <div id="jar-text">你好！我已經準備好幫你摘士多啤梨啦～ 🍓</div>
     </div>
 
+    <!-- 🌟 科研模式專屬數據流與 CSV 導出面板 -->
+    <div id="research-data-panel">
+        <div style="color:#00e5ff; font-weight:bold; margin-bottom:4px; border-bottom:1px solid rgba(0,229,255,0.2); padding-bottom:2px;">🔬 遙測採樣 (60Hz)</div>
+        <div><span style="color:#557788;">末端坐標:</span> <span id="res-pos" style="color:#00e5ff;">(0.00, 0.00, 0.00)</span></div>
+        <div><span style="color:#557788;">關節角度:</span> <span id="res-joints" style="color:#00e5ff;">0.0, 0.0, 0.0, 0.0</span></div>
+        <div><span style="color:#557788;">末端速度:</span> <span id="res-vel" style="color:#ff9100;">0.00</span> m/s</div>
+        <div><span style="color:#557788;">追蹤誤差:</span> <span id="res-err" style="color:#ff3d00;">0.000</span> m</div>
+        <div style="border-top:1px solid rgba(0,229,255,0.15); margin-top:4px; padding-top:4px; display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#00ff66; font-size:9px;">● 採樣中</span>
+            <button id="res-export-btn" class="mini-btn" style="background:rgba(0,229,255,0.25);">💾 導出 CSV</button>
+        </div>
+    </div>
+
     <!-- 🌟 控制層與 ARIA 標籤 -->
     <main class="controls-overlay">
         <div id="joy-left" class="joystick-zone" role="slider" aria-label="水平移動搖桿，控制機械臂前後左右" tabindex="0">
@@ -571,7 +577,6 @@
     </main>
 
     <script>
-        // 1. 全局 Error 捕捉
         window.addEventListener('error', (e) => {
             const boundary = document.getElementById('error-boundary');
             const msg = document.getElementById('error-message');
@@ -581,7 +586,6 @@
             }
         });
 
-        // 2. Loading 狀態平滑銷毀
         window.addEventListener('load', () => {
             setTimeout(() => {
                 const loader = document.getElementById('loading-screen');
@@ -592,7 +596,6 @@
             }, 800);
         });
 
-        // 3. AI 提示框平滑淡出 + 徹底消除阻擋 (Ghost Block Defense)
         setTimeout(() => {
             const jar = document.getElementById('jar-dialogue');
             if (jar) {
@@ -606,6 +609,6 @@
         }, 5000);
     </script>
 
-    <script type="module" src="src/main.js?v=2026.3A.FINAL"></script>
+    <script type="module" src="src/main.js?v=2026.3A.PRO.FINAL"></script>
 </body>
 </html>
