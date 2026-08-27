@@ -4,8 +4,8 @@ export const I18N = {
         statusReady: "系統就緒",
         statusActive: "運作中",
         statusComplete: "任務完成",
-        switchMode: "🔀 切換模式",
-        langBtn: "🌐 EN / 中文",
+        switchMode: "🔀 模式",
+        langBtn: "🌐 EN",
         
         modalTitle: "⚡ 切換任務模式",
         modalDesc: "請選擇即將載入的自動化領域",
@@ -33,7 +33,7 @@ export const I18N = {
         btnExportCsv: "導出 CSV",
 
         missionKid: "初熟草莓",
-        missionKidDesc: "移動夾爪至草莓正上方，按下 GRIP 抓取！",
+        missionKidDesc: "移動夾爪至上方按下 GRIP",
         missionAdv: "精密晶片",
         missionAdvDesc: "精準對位卡槽，注意角度偏差！",
         missionRes: "放射性同位素",
@@ -41,18 +41,18 @@ export const I18N = {
         viewHint: "💡 滑動旋轉視角 ｜ PC: WASD+QE+SPACE",
 
         jarTitle: "J.A.R. 系統助理",
-        jarStatus: "在線",
-        jarKidWelcome: "你好！我已經準備好幫你摘士多啤梨啦，慢慢嚟唔使急～ 🍓",
+        jarStatus: "● 在線",
+        jarKidWelcome: "你好！我已經準備好幫你摘士多啤梨啦～ 🍓",
         jarAdvWelcome: "3C 精密裝配線就緒，請操作機械臂夾取主機板晶片。",
         jarResWelcome: "危險品實驗艙已密封，請以最小振動頻率將樣本移入插座。"
     },
     en: {
         appTitle: "⚡ J.A.R. BEYOND THE HAND 3D",
-        statusReady: "SYSTEM READY",
+        statusReady: "READY",
         statusActive: "OPERATING",
         statusComplete: "COMPLETE",
-        switchMode: "🔀 Switch Mode",
-        langBtn: "🌐 中文 / EN",
+        switchMode: "🔀 Mode",
+        langBtn: "🌐 中文",
 
         modalTitle: "⚡ Select Operation Mode",
         modalDesc: "Choose an automated robotics domain to load",
@@ -87,8 +87,8 @@ export const I18N = {
         missionResDesc: "Transport sample into reactor with minimal vibration!",
         viewHint: "💡 Swipe to Rotate | PC: WASD+QE+SPACE",
 
-        jarTitle: "J.A.R. Assistant",
-        jarStatus: "ONLINE",
+        jarTitle: "J.A.R. System AI",
+        jarStatus: "● ONLINE",
         jarKidWelcome: "Hello! I am ready to help you pick strawberries. Take your time! 🍓",
         jarAdvWelcome: "Assembly line ready. Manipulate the arm to socket the microchip.",
         jarResWelcome: "Cleanroom sealed. Carefully transfer the sample into the socket."
