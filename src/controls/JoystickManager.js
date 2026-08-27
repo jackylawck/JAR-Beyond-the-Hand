@@ -12,17 +12,15 @@ class JoystickManagerInstance {
         this.activePointers = { left: null, right: null };
         this._listeners = [];
 
-        // 觸覺回饋狀態鎖（防高頻震動污染）
         this._hapticState = {
             left: { passedDeadzone: false, reachedMax: false },
             right: { passedDeadzone: false, reachedMax: false }
         };
 
-        // 3A 級手感配置 (死區 + 指數阻尼曲線)
         this.config = {
-            deadzone: 0.08,  // 8% 初始死區防誤觸
-            curve: 1.8,      // 1.8 階指數手感曲線
-            maxRadius: 1.0   // 完整輸出範圍
+            deadzone: 0.08,
+            curve: 1.8,
+            maxRadius: 1.0
         };
 
         this._setupJoystick('joy-left', 'knob-left', 'left', onMove);
@@ -45,7 +43,6 @@ class JoystickManagerInstance {
             zone.setPointerCapture(e.pointerId);
             zone.classList.add('active');
             
-            // 輕微觸控點擊反饋
             if (navigator.vibrate) navigator.vibrate(5);
             this._handleMove(e, zone, knob, id, callback);
         };
@@ -60,7 +57,6 @@ class JoystickManagerInstance {
             active = false;
             this.activePointers[id] = null;
             
-            // 重置觸覺回饋鎖
             this._hapticState[id].passedDeadzone = false;
             this._hapticState[id].reachedMax = false;
 
@@ -98,7 +94,6 @@ class JoystickManagerInstance {
         const dy = e.clientY - centerY;
         const dist = Math.hypot(dx, dy);
 
-        // 1. 死區過濾
         const deadzonePx = this.config.deadzone * maxRadius;
         if (dist < deadzonePx) {
             knob.style.transform = 'translate(-50%, -50%)';
@@ -107,32 +102,27 @@ class JoystickManagerInstance {
             return;
         }
 
-        // 2. 角度與距離歸一化
         const angle = Math.atan2(dy, dx);
         const clampedDist = Math.min(dist, maxRadius);
         const normalizedMagnitude = (clampedDist - deadzonePx) / (maxRadius - deadzonePx);
-
-        // 3. 非線性指數手感計算
         const curvedMagnitude = Math.pow(Math.max(0, normalizedMagnitude), this.config.curve);
 
         const nx = Math.cos(angle) * curvedMagnitude;
         const ny = Math.sin(angle) * curvedMagnitude;
 
-        // 4. 🌟 跨越臨界點觸覺反饋 (Haptic Pulse)
         if (navigator.vibrate) {
             if (!this._hapticState[id].passedDeadzone && curvedMagnitude > 0.05) {
-                navigator.vibrate(8); // 踏出死區微震
+                navigator.vibrate(8);
                 this._hapticState[id].passedDeadzone = true;
             }
             if (!this._hapticState[id].reachedMax && normalizedMagnitude >= 0.95) {
-                navigator.vibrate(12); // 推至極限邊界微震
+                navigator.vibrate(12);
                 this._hapticState[id].reachedMax = true;
             } else if (normalizedMagnitude < 0.9) {
                 this._hapticState[id].reachedMax = false;
             }
         }
 
-        // 5. 🌟 視覺與數值輸出完美同態同步
         const displayX = nx * maxRadius;
         const displayY = ny * maxRadius;
         knob.style.transform = `translate(calc(-50% + ${displayX}px), calc(-50% + ${displayY}px))`;
@@ -152,7 +142,6 @@ class JoystickManagerInstance {
             if (cooldown) return;
             cooldown = true;
 
-            // 氣動抓取強震動反饋
             if (navigator.vibrate) navigator.vibrate(25);
 
             btn.style.transform = 'scale(0.88)';
