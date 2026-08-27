@@ -32,13 +32,15 @@ export class MainController {
         this.controls = new OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        this.controls.target.set(0, 0.45, 0.1);
         
-        // 核心限制：最近 1.2 米，最遠 3.8 米
-        this.controls.minDistance = 1.2;
-        this.controls.maxDistance = 3.8;
+        // 🌟 核心修改 1：焦點精確對齊工作台中央底座 (Y: 0.25, Z: 0)
+        this.controls.target.set(0, 0.25, 0);
+        
+        // 🌟 核心修改 2：縮放與視角範圍適配 35° 俯瞰視角
+        this.controls.minDistance = 1.4;
+        this.controls.maxDistance = 4.2;
         this.controls.minPolarAngle = 0.2;
-        this.controls.maxPolarAngle = Math.PI / 2 - 0.05;
+        this.controls.maxPolarAngle = Math.PI / 2 - 0.1; // 防止平視視角穿入工作台底盤
 
         this.armData = ArmBuilder.build(this.sceneMgr.scene, this.mode);
         this.hud.init(this.mode);
