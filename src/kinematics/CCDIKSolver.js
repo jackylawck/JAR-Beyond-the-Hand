@@ -1,73 +1,88 @@
 import * as THREE from 'three';
 import { POOL } from '../core/Pool.js';
 
-// 備用獨立緩存向量（防止 Pool 未初始化）
-const _localEndPos = new THREE.Vector3();
-const _localBonePos = new THREE.Vector3();
-const _localV1 = new THREE.Vector3();
-const _localV2 = new THREE.Vector3();
-
 export class CCDIKSolver {
-    static solve(ikBones, endEffector, targetPos, dt) {
+    static CONFIG = {
+        maxIterations: 6,
+        damping: 0.75,
+        velocityLimit: 4.5,          // rad/s 最大角速度限幅
+        singularityThreshold: 0.015  // DLS 奇異點平滑因子
+    };
+
+    static solve(ikBones, endEffector, targetPos, dt = 0.016, config = {}) {
         if (!ikBones || !endEffector || !targetPos) return;
 
-        const maxIterations = 6;
-        const thresholdSq = 0.0001;
-        const safeDt = Math.max(0.001, Math.min(0.04, dt || 0.016));
+        const cfg = { ...CCDIKSolver.CONFIG, ...config };
+        const safeDt = Math.max(0.001, Math.min(0.04, dt));
+        const maxStepAngle = cfg.velocityLimit * safeDt;
 
-        // 限制每幀最大角速度 (rad/s)，防止關節瞬間抽搐
-        const maxAngularSpeed = 4.5;
-        const maxStepAngle = maxAngularSpeed * safeDt;
-
-        const endPos = POOL.endPos || _localEndPos;
-        const bonePos = POOL.bonePos || _localBonePos;
-        const v1 = POOL.v1 || _localV1;
-        const v2 = POOL.v2 || _localV2;
-
-        for (let iter = 0; iter < maxIterations; iter++) {
-            endEffector.getWorldPosition(endPos);
-            if (endPos.distanceToSquared(targetPos) < thresholdSq) break;
+        for (let iter = 0; iter < cfg.maxIterations; iter++) {
+            endEffector.getWorldPosition(POOL.v1);
+            if (POOL.v1.distanceToSquared(targetPos) < 0.0001) break;
 
             for (let i = ikBones.length - 1; i >= 0; i--) {
                 const bone = ikBones[i];
                 const obj = bone.obj;
                 const axis = bone.axis;
 
-                obj.getWorldPosition(bonePos);
-                endEffector.getWorldPosition(endPos);
+                obj.getWorldPosition(POOL.v2);
+                endEffector.getWorldPosition(POOL.v1);
 
-                v1.subVectors(endPos, bonePos);
-                v2.subVectors(targetPos, bonePos);
+                POOL.toEnd.subVectors(POOL.v1, POOL.v2);
+                POOL.toTarget.subVectors(targetPos, POOL.v2);
 
-                let deltaAngle = 0;
+                const lenEnd = POOL.toEnd.length();
+                const lenTarget = POOL.toTarget.length();
+                if (lenEnd < 0.001 || lenTarget < 0.001) continue;
+
+                POOL.toEnd.multiplyScalar(1.0 / lenEnd);
+                POOL.toTarget.multiplyScalar(1.0 / lenTarget);
+
+                // 奇異點檢測 + 向量積
+                POOL.cross.crossVectors(POOL.toEnd, POOL.toTarget);
+                const crossLen = POOL.cross.length();
+                if (crossLen < 0.0005) continue;
+
+                const dot = Math.max(-1, Math.min(1, POOL.toEnd.dot(POOL.toTarget)));
+                const angle = Math.acos(dot);
+
+                // 🌟 DLS (Damped Least Squares) 阻尼係數：防伸直時暴衝
+                const dlsFactor = 1.0 / (crossLen + cfg.singularityThreshold);
+                let delta = angle * cfg.damping * Math.min(1.0, dlsFactor);
+                delta = Math.max(-maxStepAngle, Math.min(maxStepAngle, delta));
 
                 if (axis === 'Y') {
-                    const curA = Math.atan2(v1.x, v1.z);
-                    const tarA = Math.atan2(v2.x, v2.z);
-                    deltaAngle = tarA - curA;
+                    const curAngle = Math.atan2(POOL.toEnd.x, POOL.toEnd.z);
+                    const targetAngle = Math.atan2(POOL.toTarget.x, POOL.toTarget.z);
+                    let rawDelta = targetAngle - curAngle;
 
-                    while (deltaAngle > Math.PI) deltaAngle -= Math.PI * 2;
-                    while (deltaAngle < -Math.PI) deltaAngle += Math.PI * 2;
+                    while (rawDelta > Math.PI) rawDelta -= Math.PI * 2;
+                    while (rawDelta < -Math.PI) rawDelta += Math.PI * 2;
 
-                    deltaAngle = Math.max(-maxStepAngle, Math.min(maxStepAngle, deltaAngle * 0.65));
-                    obj.rotation.y += deltaAngle;
+                    delta = Math.sign(rawDelta) * Math.min(Math.abs(rawDelta) * cfg.damping, maxStepAngle);
+                    let newAngle = obj.rotation.y + delta;
+
+                    // 🌟 Y 軸基座軟限位保護 (防電纜過度絞合)
+                    if (bone.min !== undefined && bone.max !== undefined) {
+                        newAngle = Math.max(bone.min, Math.min(bone.max, newAngle));
+                    }
+                    obj.rotation.y = newAngle;
 
                 } else if (axis === 'X') {
-                    const len1 = Math.hypot(v1.x, v1.z);
-                    const len2 = Math.hypot(v2.x, v2.z);
-                    const curA = Math.atan2(v1.y, len1);
-                    const tarA = Math.atan2(v2.y, len2);
-                    deltaAngle = tarA - curA;
+                    // 將旋轉軸投影至局部父級坐標系
+                    const parentMatrix = obj.parent ? obj.parent.matrixWorld : obj.matrixWorld;
+                    POOL.m1.copy(parentMatrix).invert();
+                    const localCross = POOL.cross.transformDirection(POOL.m1);
+                    const sign = localCross.x >= 0 ? 1 : -1;
 
-                    while (deltaAngle > Math.PI) deltaAngle -= Math.PI * 2;
-                    while (deltaAngle < -Math.PI) deltaAngle += Math.PI * 2;
+                    delta = Math.min(delta, maxStepAngle) * sign;
+                    let newAngle = obj.rotation.x + delta;
 
-                    deltaAngle = Math.max(-maxStepAngle, Math.min(maxStepAngle, deltaAngle * 0.65));
-                    obj.rotation.x += deltaAngle;
-
+                    // 俯仰軟限位保護 (防關節反折穿模)
                     if (bone.min !== undefined && bone.max !== undefined) {
-                        obj.rotation.x = Math.max(bone.min, Math.min(bone.max, obj.rotation.x));
+                        newAngle = Math.max(bone.min, Math.min(bone.max, newAngle));
                     }
+                    obj.rotation.x = newAngle;
                 }
 
                 obj.updateMatrixWorld(true);
