@@ -11,7 +11,7 @@ export class InputMapper {
         this._smoothLambda = 12.0;
 
         this.config = {
-            maxSpeed: 1.8,     // 平滑最高速度，避免飛出工作台
+            maxSpeed: 1.8,
             curve: 1.6
         };
 
@@ -52,20 +52,17 @@ export class InputMapper {
     update(targetPos, dt, camera) {
         const safeDt = Math.max(0.001, Math.min(0.04, dt));
 
-        // 1. 指數平滑
         const alpha = 1.0 - Math.exp(-this._smoothLambda * safeDt);
         for (const k of ['w', 'a', 's', 'd', 'q', 'e']) {
             this._keySmooth[k] += (this.keys[k] - this._keySmooth[k]) * alpha;
             if (Math.abs(this._keySmooth[k]) < 0.001) this._keySmooth[k] = 0;
         }
 
-        // 2. 視角參考系
         camera.getWorldDirection(POOL.forward);
         POOL.forward.y = 0;
         POOL.forward.normalize();
         POOL.right.crossVectors(POOL.forward, camera.up).normalize().negate();
 
-        // 3. 輸入混合
         const joyMag = Math.hypot(this.lx, this.ly);
         const joyWeight = Math.min(1.0, joyMag * 2.5);
         const keyWeight = 1.0 - joyWeight;
@@ -90,14 +87,13 @@ export class InputMapper {
             targetPos.y -= curvedElev * moveSpeed;
         }
 
-        // 4. 工作空間安全邊界 (半徑 0.35m ~ 1.85m，高度 0.2m ~ 1.6m)
+        // 工作空間安全範圍
         targetPos.y = Math.max(0.20, Math.min(1.60, targetPos.y));
         const radius = Math.hypot(targetPos.x, targetPos.z);
         if (radius > 1.85) {
             targetPos.x = (targetPos.x / radius) * 1.85;
             targetPos.z = (targetPos.z / radius) * 1.85;
         } else if (radius < 0.35) {
-            // 防機械臂自我穿插碰撞
             targetPos.x = (targetPos.x / (radius || 1)) * 0.35;
             targetPos.z = (targetPos.z / (radius || 1)) * 0.35;
         }
