@@ -176,7 +176,7 @@ export class InputMapper {
         // -------------------------------------------------------------
         const softRadius = 1.65;
         const maxRadius = 1.95;
-        const minRadius = 0.35;
+        const minRadius = 0.18; // 🌟 放寬至 0.18m，支援極致近身收折
         const radius = Math.hypot(targetPos.x, targetPos.z);
 
         // 外圈軟邊界彈簧力 + 彈性回彈衰減
@@ -203,7 +203,7 @@ export class InputMapper {
             this._currentVel.z = 0;
         }
 
-        // 內圈基座防自穿限位
+        // 內圈基座防自穿限位 (放寬至 0.18m)
         if (radius < minRadius) {
             targetPos.x = (targetPos.x / (radius || 1)) * minRadius;
             targetPos.z = (targetPos.z / (radius || 1)) * minRadius;
@@ -211,8 +211,8 @@ export class InputMapper {
             this._currentVel.z = 0;
         }
 
-        // 垂直高度工作包絡線 (0.18m ~ 1.65m)
-        targetPos.y = Math.max(0.18, Math.min(1.65, targetPos.y));
+        // 🌟 垂直高度工作包絡線：最低放寬至 0.06m，確保能精準貼地夾取草莓
+        targetPos.y = Math.max(0.06, Math.min(1.65, targetPos.y));
     }
 
     destroy() {
