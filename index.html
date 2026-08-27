@@ -8,7 +8,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#020810">
 
-    <!-- 🛡️ 企業級 CSP (嚴格限制來源、禁止 unsafe-eval、防止 Frame 劫持) -->
+    <!-- 🛡️ 企業級 CSP (合規 HTML Meta 規範) -->
     <meta http-equiv="Content-Security-Policy" content="
         default-src 'self';
         script-src 'self' https://cdnjs.cloudflare.com https://cdn.jsdelivr.net 'unsafe-inline';
@@ -19,13 +19,11 @@
         object-src 'none';
         base-uri 'self';
         form-action 'self';
-        frame-ancestors 'none';
         upgrade-insecure-requests;
     ">
 
-    <!-- 🛡️ 跨來源隔離與防窺探 Headers (防 Spectre 側信道攻擊) -->
+    <!-- 🛡️ 跨來源隔離與隱私安全 Meta -->
     <meta http-equiv="X-Content-Type-Options" content="nosniff">
-    <meta http-equiv="X-Frame-Options" content="DENY">
     <meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
     <meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=(), payment=()">
 
@@ -34,8 +32,8 @@
 
     <!-- 🌐 雙語全球 SEO 標籤 -->
     <title>J.A.R. 在手之上 3D | Beyond the Hand 3D</title>
-    <meta name="description" content="J.A.R. Beyond the Hand 3D is an open-source, zero-asset 6-DoF robotic arm simulator featuring real-time CCD-IK, dynamic telemetry, and modal frequency FFT analysis. J.A.R. 聯合應用科學探索：高精度工業與科研機械臂 3D 模擬器。">
-    <meta name="keywords" content="J.A.R., Joint Applied Research, 聯合應用科學探索, Beyond the Hand, Robotic Arm Simulator, Three.js, WebGL, CCD-IK, 6-DoF, Telemetry, FFT, 機械臂模擬器, 逆向運動學, 機器人學, 智能組裝, 工業自動化, 在手之上">
+    <meta name="description" content="J.A.R. Beyond the Hand 3D is an open-source, zero-asset 6-DoF robotic arm simulator featuring real-time CCD-IK, dynamic telemetry, and modal frequency FFT analysis.">
+    <meta name="keywords" content="J.A.R., Joint Applied Research, 聯合應用科學探索, Beyond the Hand, Robotic Arm Simulator, Three.js, WebGL, CCD-IK, 6-DoF, Telemetry, FFT">
     <meta name="author" content="Jacky Law">
     <meta name="robots" content="index, follow">
     <link rel="canonical" href="https://jackylawck.github.io/JAR-Beyond-the-Hand/">
@@ -62,20 +60,9 @@
       "name": "J.A.R. Beyond the Hand 3D",
       "alternateName": "J.A.R. 在手之上 3D - 聯合應用科學探索",
       "url": "https://jackylawck.github.io/JAR-Beyond-the-Hand/",
-      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator featuring real-time CCD-IK, FFT vibration telemetry, and 3-tier career scenarios.",
+      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator.",
       "applicationCategory": "EducationalApplication, SimulationApplication",
-      "operatingSystem": "All",
-      "browserRequirements": "Requires JavaScript. Requires WebGL / HTML5.",
-      "inLanguage": ["en", "zh-HK", "zh-TW"],
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "USD"
-      },
-      "author": {
-        "@type": "Person",
-        "name": "Jacky Law"
-      }
+      "operatingSystem": "All"
     }
     </script>
 
@@ -135,7 +122,7 @@
             z-index: 1;
         }
 
-        /* 🌟 1. 頂部極簡全息即時數據長條 */
+        /* 頂部極簡全息即時數據長條 */
         #top-telemetry-bar {
             position: absolute;
             top: calc(env(safe-area-inset-top, 10px) + 6px);
@@ -191,7 +178,7 @@
 
         .mini-btn:active { transform: scale(0.95); }
 
-        /* 🌟 2. 單行緊湊任務提示 */
+        /* 單行緊湊任務提示 */
         #compact-mission-tip {
             position: absolute;
             top: calc(env(safe-area-inset-top, 10px) + 46px);
@@ -210,7 +197,7 @@
             white-space: nowrap;
         }
 
-        /* 🌟 3. AI 提示框 (短暫提示後淡出) */
+        /* AI 提示框 */
         #jar-dialogue {
             position: absolute;
             bottom: clamp(120px, 16vh, 140px);
@@ -232,7 +219,7 @@
         #jar-title { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--color-primary); margin-bottom: 2px; }
         #jar-text { color: #fff; font-size: 12px; line-height: 1.3; }
 
-        /* 🌟 4. 雙搖桿與 GRIP 按鈕 */
+        /* 雙搖桿與 GRIP 按鈕 */
         .controls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
 
         #joy-left {
