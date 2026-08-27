@@ -1,25 +1,30 @@
 import * as THREE from 'three';
 import { I18N } from '../config/i18n.js';
-import { POOL } from '../core/Pool.js';
 
 export class MissionManager {
-    constructor(endEffector, reactorSocket, audioEngine, scene, mode = 'kid', hud = null) {
+    constructor(endEffector, reactorSocket, audioEngine, scene, mode = 'kid', hud = null, fx = null) {
         this.endEffector = endEffector;
         this.reactorSocket = reactorSocket;
         this.audio = audioEngine;
         this.scene = scene;
         this.mode = mode;
         this.hud = hud;
+        this.fx = fx;
         this.lang = 'zh';
 
         this.clawOpen = true;
         this.isSecured = false;
         this.isCompleted = false;
         this.currentDistance = 1.0;
+        this.startTime = Date.now();
+
+        this._endEffectorWorldPos = new THREE.Vector3();
+        this._targetWorldPos = new THREE.Vector3();
+        this._socketWorldPos = new THREE.Vector3();
 
         this.targetObj = null;
-        this._targetWorldPos = new THREE.Vector3();
-        this._endEffectorWorldPos = new THREE.Vector3();
+        this._targetBaseScale = 1.0;
+        this._animTime = 0;
 
         this._spawnTargetItem();
         this._initScenario();
@@ -35,43 +40,43 @@ export class MissionManager {
         const itemGroup = new THREE.Group();
 
         if (isKid) {
-            // 🍓 兒童模式：立體草莓 (放在半徑 0.75m，極易夾取的位置)
-            const berryGeo = new THREE.SphereGeometry(0.07, 16, 16);
-            berryGeo.scale(1, 1.25, 1);
-            const berryMat = new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.1 });
-            const berry = new THREE.Mesh(berryGeo, berryMat);
-            berry.position.y = 0.08;
+            // 🍓 初熟立體草莓
+            const berry = new THREE.Mesh(
+                new THREE.SphereGeometry(0.065, 16, 16),
+                new THREE.MeshStandardMaterial({ color: 0xef4444, roughness: 0.3, metalness: 0.1 })
+            );
+            berry.scale.set(1, 1.25, 1);
+            berry.position.y = 0.05;
             berry.castShadow = true;
             itemGroup.add(berry);
 
-            // 葉片
-            const leafMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 });
-            const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.03, 5), leafMat);
-            leaf.position.y = 0.16;
+            const leaf = new THREE.Mesh(
+                new THREE.ConeGeometry(0.035, 0.025, 5),
+                new THREE.MeshStandardMaterial({ color: 0x22c55e, roughness: 0.6 })
+            );
+            leaf.position.y = 0.11;
             itemGroup.add(leaf);
-
-            // 初始放置位置 (X: -0.55, Z: 0.55 -> 半徑約 0.77m，近身好操作)
-            itemGroup.position.set(-0.55, 0.12, 0.55);
+            itemGroup.position.set(-0.48, 0.08, 0.48);
 
         } else if (this.mode === 'advanced') {
-            // 📱 3C 晶片
-            const chipGeo = new THREE.BoxGeometry(0.12, 0.03, 0.12);
-            const chipMat = new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.2 });
-            const chip = new THREE.Mesh(chipGeo, chipMat);
-            chip.position.y = 0.03;
+            const chip = new THREE.Mesh(
+                new THREE.BoxGeometry(0.11, 0.025, 0.11),
+                new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.2 })
+            );
+            chip.position.y = 0.025;
             chip.castShadow = true;
             itemGroup.add(chip);
-            itemGroup.position.set(-0.6, 0.10, 0.6);
+            itemGroup.position.set(-0.52, 0.08, 0.52);
 
         } else {
-            // 🧪 科研同位素晶球
-            const coreGeo = new THREE.SphereGeometry(0.065, 16, 16);
-            const coreMat = new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.5 });
-            const core = new THREE.Mesh(coreGeo, coreMat);
-            core.position.y = 0.07;
+            const core = new THREE.Mesh(
+                new THREE.SphereGeometry(0.06, 16, 16),
+                new THREE.MeshStandardMaterial({ color: 0x10b981, emissive: 0x059669, emissiveIntensity: 0.5 })
+            );
+            core.position.y = 0.06;
             core.castShadow = true;
             itemGroup.add(core);
-            itemGroup.position.set(-0.65, 0.12, 0.65);
+            itemGroup.position.set(-0.55, 0.08, 0.55);
         }
 
         this.scene.add(itemGroup);
@@ -91,59 +96,102 @@ export class MissionManager {
 
     setLanguage(lang) {
         this.lang = lang;
-        const t = I18N[lang] || I18N.zh;
-        const jarText = document.getElementById('jar-text');
-        if (jarText) {
-            let welcome = t.jarKidWelcome;
-            if (this.mode === 'advanced') welcome = t.jarAdvWelcome;
-            else if (this.mode === 'research') welcome = t.jarResWelcome;
-            jarText.innerText = welcome;
-        }
+        this._initScenario();
     }
 
     toggleGrip() {
         this.clawOpen = !this.clawOpen;
-        if (this.audio) this.audio.playPneumatic();
 
-        // 🌟 夾取判定：夾爪閉合且與目標距離 < 0.22m
-        if (!this.clawOpen && this.currentDistance < 0.22 && !this.isSecured) {
-            this.isSecured = true;
-            if (this.audio) this.audio.playSuccess();
-            
-            const tip = document.getElementById('compact-mission-tip');
-            if (tip) tip.innerText = (this.lang === 'en') ? "✅ Grabbed! Move to glowing socket" : "✅ 已成功夾取！請移至發光卡槽放低";
+        if (this.clawOpen) {
+            // 釋放夾爪
+            if (this.audio) this.audio.playPneumatic();
+            if (this.isSecured) {
+                this.isSecured = false;
+                
+                // 檢查是否精確投放到目標卡槽 (半徑 < 0.32m)
+                this.reactorSocket.getWorldPosition(this._socketWorldPos);
+                const socketDist = this.targetObj.position.distanceTo(this._socketWorldPos);
 
-        } else if (this.clawOpen && this.isSecured) {
-            // 放開物體
-            this.isSecured = false;
-            
-            // 檢查是否已送達目標基座 (半徑 < 0.25m)
-            const socketDist = this.targetObj.position.distanceTo(this.reactorSocket.position);
-            if (socketDist < 0.35) {
-                this.isCompleted = true;
-                this.targetObj.position.copy(this.reactorSocket.position);
-                this.targetObj.position.y += 0.08;
-                if (this.audio) this.audio.playSuccess();
-
-                const tip = document.getElementById('compact-mission-tip');
-                if (tip) tip.innerText = (this.lang === 'en') ? "🎉 Mission Complete! Perfect Assembly!" : "🎉 任務圓滿達成！完美對位組裝！";
+                if (socketDist < 0.32) {
+                    this._celebrateVictory();
+                }
             }
+        } else {
+            // 🌟 夾取機械延遲與反饋
+            if (this.audio) this.audio.playPneumatic();
+
+            setTimeout(() => {
+                if (this.currentDistance < 0.20 && !this.isSecured) {
+                    this.isSecured = true;
+                    if (this.audio) {
+                        this.audio.playLock();
+                        this.audio.playSuccess();
+                    }
+                    if (this.fx) {
+                        this.fx.triggerBurst(this._endEffectorWorldPos, 0x00e5ff);
+                        this.fx.triggerShake(0.03, 0.2);
+                    }
+
+                    const tip = document.getElementById('compact-mission-tip');
+                    if (tip) {
+                        tip.innerText = (this.lang === 'en') ? "✨ Secured! Deliver to the glowing socket" : "✨ 已牢固夾取！請移至發光卡槽放低";
+                        tip.style.borderColor = "#00e5ff";
+                    }
+                }
+            }, 120);
+        }
+    }
+
+    _celebrateVictory() {
+        this.isCompleted = true;
+        this.targetObj.position.copy(this._socketWorldPos);
+        this.targetObj.position.y += 0.08;
+
+        const durationSec = ((Date.now() - this.startTime) / 1000).toFixed(1);
+
+        if (this.audio) this.audio.playVictory();
+        if (this.fx) {
+            this.fx.triggerBurst(this._socketWorldPos, 0xffd700);
+            this.fx.triggerShake(0.07, 0.45);
+        }
+
+        // 🌟 全息通關閃光與結算提示
+        const tip = document.getElementById('compact-mission-tip');
+        if (tip) {
+            tip.innerText = (this.lang === 'en') 
+                ? `🏆 Rank S! Completed in ${durationSec}s · Flawless!`
+                : `🏆 S級評定！耗時 ${durationSec}秒 · 完美組裝！`;
+            tip.style.borderColor = "#ffd700";
+            tip.style.color = "#ffd700";
         }
     }
 
     update(dt, targetPos, intensity) {
         if (!this.endEffector || !this.targetObj) return;
 
+        this._animTime += dt;
         this.endEffector.getWorldPosition(this._endEffectorWorldPos);
         this.targetObj.getWorldPosition(this._targetWorldPos);
-
-        // 🌟 即時計算夾爪與物體的 3D 空間真實誤差距離
         this.currentDistance = this._endEffectorWorldPos.distanceTo(this._targetWorldPos);
 
-        // 夾取後物件緊跟夾爪中心
-        if (this.isSecured) {
+        // 🌟 3A 細節：草莓待機呼吸與靠近誘惑發光
+        if (!this.isSecured && !this.isCompleted) {
+            const breath = 1.0 + Math.sin(this._animTime * 4.0) * 0.03;
+            this.targetObj.scale.set(breath, breath, breath);
+
+            // 當機械臂極其靠近 (<0.3m) 時，草莓微微顫動興奮提示
+            if (this.currentDistance < 0.30) {
+                const excite = Math.sin(this._animTime * 16.0) * 0.004;
+                this.targetObj.position.x += excite;
+            }
+        } else if (this.isSecured) {
             this.targetObj.position.copy(this._endEffectorWorldPos);
             this.targetObj.position.y -= 0.02;
+            this.targetObj.scale.set(1.0, 1.0, 1.0);
         }
+    }
+
+    getDistance() {
+        return this.currentDistance;
     }
 }
