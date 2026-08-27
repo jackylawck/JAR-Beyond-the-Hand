@@ -29,17 +29,16 @@ export class MainController {
     }
 
     init() {
-        // 🌟 1. 配置高精度 OrbitControls (限制縮放範圍，徹底杜絕拉飛)
         this.controls = new OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        this.controls.target.set(0, 0.45, 0.1); // 緊緊對準機械臂中心
+        this.controls.target.set(0, 0.45, 0.1);
         
-        // 🌟 核心限制：最近 1.2 米，最遠 3.8 米（永遠保持在特寫與舒適全景之間）
+        // 核心限制：最近 1.2 米，最遠 3.8 米
         this.controls.minDistance = 1.2;
         this.controls.maxDistance = 3.8;
-        this.controls.minPolarAngle = 0.2; // 防止完全正上方穿頂
-        this.controls.maxPolarAngle = Math.PI / 2 - 0.05; // 防止穿入地底
+        this.controls.minPolarAngle = 0.2;
+        this.controls.maxPolarAngle = Math.PI / 2 - 0.05;
 
         this.armData = ArmBuilder.build(this.sceneMgr.scene, this.mode);
         this.hud.init(this.mode);
