@@ -18,8 +18,8 @@ class JoystickManagerInstance {
         };
 
         this.config = {
-            deadzone: 0.08,
-            curve: 1.8,
+            deadzone: 0.08,  // 8% 防誤觸死區
+            curve: 1.8,     // 1.8 階指數手感曲線
             maxRadius: 1.0
         };
 
@@ -104,25 +104,31 @@ class JoystickManagerInstance {
 
         const angle = Math.atan2(dy, dx);
         const clampedDist = Math.min(dist, maxRadius);
-        const normalizedMagnitude = (clampedDist - deadzonePx) / (maxRadius - deadzonePx);
-        const curvedMagnitude = Math.pow(Math.max(0, normalizedMagnitude), this.config.curve);
+        
+        // 🌟 1. 線性歸一化數值 (0.0 ~ 1.0)
+        const rawMagnitude = (clampedDist - deadzonePx) / (maxRadius - deadzonePx);
+        
+        // 🌟 2. 1.8 階非線性手感曲線 (微調細膩、大幅推動靈敏)
+        const curvedMagnitude = Math.pow(Math.max(0, rawMagnitude), this.config.curve);
 
         const nx = Math.cos(angle) * curvedMagnitude;
         const ny = Math.sin(angle) * curvedMagnitude;
 
+        // 🌟 3. 精確微觸覺回饋 (零延遲穿越死區 + 極限邊界回饋)
         if (navigator.vibrate) {
-            if (!this._hapticState[id].passedDeadzone && curvedMagnitude > 0.05) {
+            if (!this._hapticState[id].passedDeadzone && rawMagnitude > 0.01) {
                 navigator.vibrate(8);
                 this._hapticState[id].passedDeadzone = true;
             }
-            if (!this._hapticState[id].reachedMax && normalizedMagnitude >= 0.95) {
+            if (!this._hapticState[id].reachedMax && rawMagnitude >= 0.98) {
                 navigator.vibrate(12);
                 this._hapticState[id].reachedMax = true;
-            } else if (normalizedMagnitude < 0.9) {
+            } else if (rawMagnitude < 0.92) {
                 this._hapticState[id].reachedMax = false;
             }
         }
 
+        // 視覺旋鈕位移對齊
         const displayX = nx * maxRadius;
         const displayY = ny * maxRadius;
         knob.style.transform = `translate(calc(-50% + ${displayX}px), calc(-50% + ${displayY}px))`;
