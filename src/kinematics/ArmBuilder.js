@@ -2,275 +2,209 @@ import * as THREE from 'three';
 
 export class ArmBuilder {
     static build(scene, mode = 'kid') {
-        // 1. 程序化微刮痕與工業噪點貼圖
+        // 1. 程序化微刮痕貼圖
         const scratchTex = (() => {
             const c = document.createElement('canvas');
-            c.width = 512;
-            c.height = 512;
+            c.width = 512; c.height = 512;
             const ctx = c.getContext('2d');
             ctx.fillStyle = '#666666';
             ctx.fillRect(0, 0, 512, 512);
-
-            for (let i = 0; i < 400; i++) {
-                ctx.strokeStyle = `rgba(0,0,0,${0.08 + Math.random() * 0.15})`;
-                ctx.lineWidth = 0.8 + Math.random() * 1.5;
+            for (let i = 0; i < 300; i++) {
+                ctx.strokeStyle = `rgba(0,0,0,${0.08 + Math.random() * 0.12})`;
+                ctx.lineWidth = 1;
                 ctx.beginPath();
-                const x = Math.random() * 512;
-                const y = Math.random() * 512;
+                const x = Math.random() * 512, y = Math.random() * 512;
                 ctx.moveTo(x, y);
-                ctx.lineTo(x + (Math.random() - 0.5) * 45, y + (Math.random() - 0.5) * 45);
+                ctx.lineTo(x + (Math.random() - 0.5) * 30, y + (Math.random() - 0.5) * 30);
                 ctx.stroke();
             }
             const t = new THREE.CanvasTexture(c);
-            t.wrapS = THREE.RepeatWrapping;
-            t.wrapT = THREE.RepeatWrapping;
+            t.wrapS = THREE.RepeatWrapping; t.wrapT = THREE.RepeatWrapping;
             t.repeat.set(2, 2);
             return t;
         })();
 
-        // 2. 基礎情境配色
-        let theme = { armor: 0xf1f5f9, secondary: 0x1e293b, accent: 0xe05600, hose: 0xdc2626, led: 0x00e5ff };
+        // 2. 主題配色
+        let theme = { armor: 0xf8fafc, secondary: 0x1e293b, accent: 0x00e5ff, hose: 0x38bdf8, led: 0x00e5ff };
+        if (mode === 'kid') theme = { armor: 0xffffff, secondary: 0x334155, accent: 0xf97316, hose: 0x16a34a, led: 0x4ade80 };
+        else if (mode === 'advanced') theme = { armor: 0x334155, secondary: 0x0f172a, accent: 0xeab308, hose: 0xef4444, led: 0x38bdf8 };
 
-        if (mode === 'kid') {
-            theme = { armor: 0xffffff, secondary: 0x334155, accent: 0xf97316, hose: 0x16a34a, led: 0x4ade80 };
-        } else if (mode === 'advanced') {
-            theme = { armor: 0x334155, secondary: 0x0f172a, accent: 0xeab308, hose: 0xef4444, led: 0x38bdf8 };
-        } else {
-            theme = { armor: 0x0f172a, secondary: 0x1e293b, accent: 0x00e5ff, hose: 0x6366f1, led: 0x00ffff };
-        }
-
-        // 🌟 S 級解鎖判定：黃金特仕版塗裝
-        const unlocks = JSON.parse(localStorage.getItem('jar-unlocks') || '{}');
-        let finalMetalness = mode === 'research' ? 0.95 : 0.82;
-        let finalRoughness = mode === 'research' ? 0.18 : 0.28;
-
-        if (unlocks.goldenSkin) {
-            theme.armor = 0xd4af37; // 究極土豪金
-            finalMetalness = 1.0;
-            finalRoughness = 0.15;
-        }
-
-        // 3. 材質庫
-        const matArmor = new THREE.MeshStandardMaterial({
-            color: theme.armor,
-            metalness: finalMetalness,
-            roughness: finalRoughness,
-            roughnessMap: scratchTex,
-            envMapIntensity: 1.8
-        });
-
-        const matSecondary = new THREE.MeshStandardMaterial({
-            color: theme.secondary,
-            metalness: 0.9,
-            roughness: 0.25,
-            roughnessMap: scratchTex,
-            envMapIntensity: 1.3
-        });
-
-        const matDarkSteel = new THREE.MeshStandardMaterial({
-            color: 0x0b0f19,
-            metalness: 0.98,
-            roughness: 0.35,
-            roughnessMap: scratchTex,
-            envMapIntensity: 1.2
-        });
-
-        const matChrome = new THREE.MeshStandardMaterial({
-            color: 0xf8fafc,
-            metalness: 1.0,
-            roughness: 0.06,
-            envMapIntensity: 2.2
-        });
-
-        const matAccent = new THREE.MeshStandardMaterial({
-            color: theme.accent,
-            metalness: 0.88,
-            roughness: 0.22,
-            roughnessMap: scratchTex,
-            envMapIntensity: 1.8
-        });
-
+        // 3. PBR 材質庫
+        const matArmor = new THREE.MeshStandardMaterial({ color: theme.armor, metalness: 0.8, roughness: 0.25, roughnessMap: scratchTex, envMapIntensity: 1.5 });
+        const matSecondary = new THREE.MeshStandardMaterial({ color: theme.secondary, metalness: 0.9, roughness: 0.3, roughnessMap: scratchTex, envMapIntensity: 1.2 });
+        const matDarkSteel = new THREE.MeshStandardMaterial({ color: 0x0b0f19, metalness: 0.98, roughness: 0.35, roughnessMap: scratchTex });
+        const matChrome = new THREE.MeshStandardMaterial({ color: 0xffffff, metalness: 1.0, roughness: 0.08, envMapIntensity: 2.0 });
+        const matAccent = new THREE.MeshStandardMaterial({ color: theme.accent, metalness: 0.85, roughness: 0.2 });
         const matHose = new THREE.MeshStandardMaterial({ color: theme.hose, roughness: 0.6, metalness: 0.2 });
-        const matRubberGrip = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95, metalness: 0.05 });
-        const matLed = new THREE.MeshBasicMaterial({ color: theme.led });
+        const matRubberGrip = new THREE.MeshStandardMaterial({ color: 0x18181b, roughness: 0.95 });
         const matStatusLed = new THREE.MeshBasicMaterial({ color: 0xff7700 });
 
         const ikBones = [];
 
-        // --- 骨架組裝 ---
+        // -------------------------------------------------------------
+        // 🌟 基座 (Base Group)
+        // -------------------------------------------------------------
         const baseGroup = new THREE.Group();
-        baseGroup.position.set(0, 0.12, 0);
+        baseGroup.position.set(0, 0.08, 0);
         scene.add(baseGroup);
 
-        const baseArmor = new THREE.Mesh(new THREE.CylinderGeometry(0.58, 0.72, 0.22, 32), matSecondary);
-        baseArmor.position.y = 0.11;
-        baseArmor.castShadow = true;
-        baseArmor.receiveShadow = true;
-        baseGroup.add(baseArmor);
+        const baseDisc = new THREE.Mesh(new THREE.CylinderGeometry(0.52, 0.64, 0.16, 36), matSecondary);
+        baseDisc.position.y = 0.08;
+        baseDisc.castShadow = true;
+        baseDisc.receiveShadow = true;
+        baseGroup.add(baseDisc);
 
-        const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 32), matDarkSteel);
-        flange.position.y = 0.24;
+        const flange = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 36), matDarkSteel);
+        flange.position.y = 0.18;
         baseGroup.add(flange);
 
-        for (let i = 0; i < 8; i++) {
-            const bolt = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.04, 8), matChrome);
-            const angle = (i / 8) * Math.PI * 2;
-            bolt.position.set(Math.cos(angle) * 0.44, 0.26, Math.sin(angle) * 0.44);
-            baseGroup.add(bolt);
-        }
-
+        // -------------------------------------------------------------
+        // 🌟 Joint 0: 基座 Y 軸迴轉台 (Turntable)
+        // -------------------------------------------------------------
         const joint0 = new THREE.Group();
-        joint0.position.set(0, 0.26, 0);
+        joint0.position.set(0, 0.20, 0);
         baseGroup.add(joint0);
-        ikBones.push({ obj: joint0, axis: 'Y', min: -Math.PI, max: Math.PI });
+        ikBones.push({ obj: joint0, axis: 'Y' });
 
-        const forkL = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.42, 0.34), matDarkSteel);
-        forkL.position.set(-0.24, 0.2, 0);
+        const turntable = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.36, 0.16, 32), matDarkSteel);
+        turntable.position.y = 0.08;
+        turntable.castShadow = true;
+        joint0.add(turntable);
+
+        const forkL = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.36, 0.26), matDarkSteel);
+        forkL.position.set(-0.20, 0.22, 0);
         forkL.castShadow = true;
         joint0.add(forkL);
 
-        const forkR = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.42, 0.34), matDarkSteel);
-        forkR.position.set(0.24, 0.2, 0);
+        const forkR = new THREE.Mesh(new THREE.BoxGeometry(0.10, 0.36, 0.26), matDarkSteel);
+        forkR.position.set(0.20, 0.22, 0);
         forkR.castShadow = true;
         joint0.add(forkR);
 
-        for (let f = 0; f < 4; f++) {
-            const finL = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.03, 0.26), matChrome);
-            finL.position.set(-0.31, 0.12 + f * 0.06, 0);
-            joint0.add(finL);
-            const finR = finL.clone();
-            finR.position.x = 0.31;
-            joint0.add(finR);
-        }
-
+        // -------------------------------------------------------------
+        // 🌟 Joint 1: 肩關節 (大臂長度最佳化為 0.65m，大幅增加近身折疊性)
+        // -------------------------------------------------------------
         const joint1 = new THREE.Group();
-        joint1.position.set(0, 0.34, 0);
+        joint1.position.set(0, 0.32, 0);
         joint0.add(joint1);
-        ikBones.push({ obj: joint1, axis: 'X', min: -Math.PI * 0.5, max: Math.PI * 0.55 });
+        // 肩部全向俯仰角度範圍 (-75° ~ +85°)
+        ikBones.push({ obj: joint1, axis: 'X', min: -Math.PI * 0.42, max: Math.PI * 0.48 });
 
-        const shoulderPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.19, 0.19, 0.52, 24), matChrome);
+        const shoulderPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.16, 0.16, 0.44, 24), matChrome);
         shoulderPivot.rotation.z = Math.PI / 2;
+        shoulderPivot.castShadow = true;
         joint1.add(shoulderPivot);
 
-        const boomOuterL = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.15, 0.18), matArmor);
-        boomOuterL.position.set(-0.14, 0.58, 0);
-        boomOuterL.castShadow = true;
-        joint1.add(boomOuterL);
+        const upperArm = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.65, 0.16), matArmor);
+        upperArm.position.set(0, 0.325, 0);
+        upperArm.castShadow = true;
+        joint1.add(upperArm);
 
-        const boomOuterR = new THREE.Mesh(new THREE.BoxGeometry(0.09, 1.15, 0.18), matArmor);
-        boomOuterR.position.set(0.14, 0.58, 0);
-        boomOuterR.castShadow = true;
-        joint1.add(boomOuterR);
-
-        const ledStripL = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.9, 0.03), matLed);
-        ledStripL.position.set(-0.19, 0.58, 0.06);
-        joint1.add(ledStripL);
-
-        const ledStripR = new THREE.Mesh(new THREE.BoxGeometry(0.015, 0.9, 0.03), matLed);
-        ledStripR.position.set(0.19, 0.58, 0.06);
-        joint1.add(ledStripR);
-
-        const pistonBase = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 0.75, 16), matDarkSteel);
-        pistonBase.position.set(0, 0.42, -0.11);
-        pistonBase.castShadow = true;
-        joint1.add(pistonBase);
-
-        const pistonRod = new THREE.Mesh(new THREE.CylinderGeometry(0.032, 0.032, 0.7, 16), matChrome);
-        pistonRod.position.set(0, 0.78, -0.11);
-        joint1.add(pistonRod);
-
-        const extensionRod = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.95, 16), matChrome);
-        extensionRod.position.set(0, 0.65, 0);
+        // 伸縮導軌
+        const extensionRod = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, 0.55, 16), matChrome);
+        extensionRod.position.set(0, 0.35, 0);
         joint1.add(extensionRod);
 
+        // -------------------------------------------------------------
+        // 🌟 Joint 2: 肘關節 (前臂長度最佳化為 0.55m，可大幅向後/向前收折)
+        // -------------------------------------------------------------
         const joint2 = new THREE.Group();
-        joint2.position.set(0, 1.05, 0);
+        joint2.position.set(0, 0.65, 0);
         joint1.add(joint2);
-        ikBones.push({ obj: joint2, axis: 'X', min: -Math.PI * 0.8, max: 0.15 });
+        // 肘部大範圍折疊角度 (-140° ~ +45°)，徹底解決埋身夾唔到
+        ikBones.push({ obj: joint2, axis: 'X', min: -Math.PI * 0.80, max: Math.PI * 0.25 });
 
-        const driveGear = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.38, 24), matDarkSteel);
-        driveGear.rotation.z = Math.PI / 2;
-        driveGear.castShadow = true;
-        joint2.add(driveGear);
+        const elbowPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.32, 24), matDarkSteel);
+        elbowPivot.rotation.z = Math.PI / 2;
+        elbowPivot.castShadow = true;
+        joint2.add(elbowPivot);
 
-        const forearm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.85, 8), matSecondary);
-        forearm.position.set(0, 0.42, 0);
+        const forearm = new THREE.Mesh(new THREE.BoxGeometry(0.11, 0.55, 0.12), matSecondary);
+        forearm.position.set(0, 0.275, 0);
         forearm.castShadow = true;
         joint2.add(forearm);
 
-        const hoseCurve = new THREE.CatmullRomCurve3([
-            new THREE.Vector3(0.14, 0.05, 0.08),
-            new THREE.Vector3(0.18, 0.42, 0.14),
-            new THREE.Vector3(0.12, 0.8, 0.06)
-        ]);
-        const hoseGeo = new THREE.TubeGeometry(hoseCurve, 16, 0.018, 8, false);
-        const hoseMesh = new THREE.Mesh(hoseGeo, matHose);
-        joint2.add(hoseMesh);
-
+        // -------------------------------------------------------------
+        // 🌟 Joint 3: 腕部關節 (垂直朝下下壓補償)
+        // -------------------------------------------------------------
         const joint3 = new THREE.Group();
-        joint3.position.set(0, 0.85, 0);
+        joint3.position.set(0, 0.55, 0);
         joint2.add(joint3);
-        ikBones.push({ obj: joint3, axis: 'X', min: -Math.PI * 0.65, max: Math.PI * 0.65 });
+        ikBones.push({ obj: joint3, axis: 'X', min: -Math.PI * 0.7, max: Math.PI * 0.7 });
 
-        const wristHousing = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.12, 16), matDarkSteel);
-        joint3.add(wristHousing);
+        const wristPivot = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.20, 20), matChrome);
+        wristPivot.rotation.z = Math.PI / 2;
+        wristPivot.castShadow = true;
+        joint3.add(wristPivot);
 
-        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.18), matArmor);
-        palm.position.set(0, 0.07, 0);
+        // -------------------------------------------------------------
+        // 🌟 垂直朝下的末端夾爪機構 (Top-Down Gripper System)
+        // -------------------------------------------------------------
+        const gripperHead = new THREE.Group();
+        gripperHead.position.set(0, 0.10, 0);
+        // 🌟 關鍵：夾爪法蘭盤橫向展開，指尖朝向正下方 (-Y)
+        joint3.add(gripperHead);
+
+        const palm = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.04, 0.10), matDarkSteel);
         palm.castShadow = true;
-        joint3.add(palm);
+        gripperHead.add(palm);
 
-        const statusLed = new THREE.Mesh(new THREE.CylinderGeometry(0.02, 0.02, 0.02, 12), matStatusLed);
-        statusLed.rotation.x = Math.PI / 2;
-        statusLed.position.set(0, 0.07, 0.095);
-        joint3.add(statusLed);
+        // 狀態指示燈
+        const statusLed = new THREE.Mesh(new THREE.SphereGeometry(0.016, 12, 12), matStatusLed);
+        statusLed.position.set(0, 0.03, 0.05);
+        gripperHead.add(statusLed);
 
+        // 氣動手指 Left (垂直朝下)
         const clawLeft = new THREE.Group();
-        const clawBodyL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.24, 0.1), matAccent);
-        clawBodyL.position.set(-0.09, 0.18, 0);
+        clawLeft.position.set(-0.08, -0.02, 0);
+        const clawBodyL = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.06), matAccent);
+        clawBodyL.position.y = -0.07;
         clawBodyL.castShadow = true;
         clawLeft.add(clawBodyL);
+        const rubberL = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.10, 0.05), matRubberGrip);
+        rubberL.position.set(0.015, -0.07, 0);
+        clawLeft.add(rubberL);
+        gripperHead.add(clawLeft);
 
-        const rubberPadL = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.16, 0.08), matRubberGrip);
-        rubberPadL.position.set(-0.066, 0.18, 0);
-        clawLeft.add(rubberPadL);
-        joint3.add(clawLeft);
-
+        // 氣動手指 Right (垂直朝下)
         const clawRight = new THREE.Group();
-        const clawBodyR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.24, 0.1), matAccent);
-        clawBodyR.position.set(0.09, 0.18, 0);
+        clawRight.position.set(0.08, -0.02, 0);
+        const clawBodyR = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.06), matAccent);
+        clawBodyR.position.y = -0.07;
         clawBodyR.castShadow = true;
         clawRight.add(clawBodyR);
+        const rubberR = new THREE.Mesh(new THREE.BoxGeometry(0.012, 0.10, 0.05), matRubberGrip);
+        rubberR.position.set(-0.015, -0.07, 0);
+        clawRight.add(rubberR);
+        gripperHead.add(clawRight);
 
-        const rubberPadR = new THREE.Mesh(new THREE.BoxGeometry(0.016, 0.16, 0.08), matRubberGrip);
-        rubberPadR.position.set(0.066, 0.18, 0);
-        clawRight.add(rubberPadR);
-        joint3.add(clawRight);
-
+        // 🌟 IK 求解終點：設於兩指夾具中心點下方
         const endEffector = new THREE.Group();
-        endEffector.position.set(0, 0.3, 0);
-        joint3.add(endEffector);
+        endEffector.position.set(0, -0.15, 0);
+        gripperHead.add(endEffector);
 
-        // --- 基座槽位 ---
+        // -------------------------------------------------------------
+        // 🌟 任務目標卡槽基座
+        // -------------------------------------------------------------
         const socketGroup = new THREE.Group();
-        socketGroup.position.set(0.9, 0.12, 0.9);
+        socketGroup.position.set(0.8, 0.08, 0.8);
         scene.add(socketGroup);
 
         const reactorSocket = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.32, 0.36, 0.14, 24),
+            new THREE.CylinderGeometry(0.24, 0.28, 0.10, 24),
             new THREE.MeshStandardMaterial({ color: 0x1e293b, metalness: 0.85, roughness: 0.3 })
         );
-        reactorSocket.position.y = 0.07;
+        reactorSocket.position.y = 0.05;
         reactorSocket.castShadow = true;
         socketGroup.add(reactorSocket);
 
-        const socketGlowRing = new THREE.Mesh(
-            new THREE.TorusGeometry(0.24, 0.018, 8, 32),
+        const glowRing = new THREE.Mesh(
+            new THREE.TorusGeometry(0.18, 0.014, 8, 32),
             new THREE.MeshBasicMaterial({ color: theme.accent })
         );
-        socketGlowRing.rotation.x = Math.PI / 2;
-        socketGlowRing.position.y = 0.145;
-        socketGroup.add(socketGlowRing);
+        glowRing.rotation.x = Math.PI / 2;
+        glowRing.position.y = 0.105;
+        socketGroup.add(glowRing);
 
         return {
             ikBones,
@@ -279,7 +213,6 @@ export class ArmBuilder {
             clawRight,
             reactorSocket: socketGroup,
             extensionRod,
-            pistonRod,
             joint2,
             statusLed
         };
