@@ -5,12 +5,12 @@ export class HUDManager {
         this.dom = {};
         this.mode = 'kid';
         this.lang = 'zh';
+        this.recordedData = [];
     }
 
     init(mode = 'kid') {
         this.mode = mode;
         
-        // 🌟 徹底清理舊版遺留的殘餘 DOM，防止遮擋畫面
         const oldPanel = document.getElementById('telemetry-panel');
         if (oldPanel) oldPanel.remove();
 
@@ -49,5 +49,54 @@ export class HUDManager {
 
         const err = mission?.currentDistance || 0;
         this.dom.valErr.innerText = err.toFixed(2);
+    }
+
+    _sanitizeCSVField(val) {
+        let str = String(val ?? '');
+        if (/^[=+\-@\t\r]/.test(str)) {
+            str = `'${str}`;
+        }
+        if (/[",\n\r]/.test(str)) {
+            str = `"${str.replace(/"/g, '""')}"`;
+        }
+        return str;
+    }
+
+    exportCSV() {
+        if (this.recordedData.length === 0) {
+            alert(this.lang === 'en' ? 'No telemetry data recorded yet!' : '尚未有已記錄的遙測數據！');
+            return;
+        }
+
+        const headers = ['Timestamp(ms)', 'X(m)', 'Y(m)', 'Z(m)', 'Error(m)', 'Power(mW)', 'Payload(N)'];
+        let csvContent = headers.map(h => this._sanitizeCSVField(h)).join(',') + '\r\n';
+
+        this.recordedData.forEach(row => {
+            const line = [
+                this._sanitizeCSVField(row.time),
+                this._sanitizeCSVField(row.x),
+                this._sanitizeCSVField(row.y),
+                this._sanitizeCSVField(row.z),
+                this._sanitizeCSVField(row.err),
+                this._sanitizeCSVField(row.power),
+                this._sanitizeCSVField(row.payload)
+            ];
+            csvContent += line.join(',') + '\r\n';
+        });
+
+        const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+        const blob = new Blob([bom, csvContent], { type: 'text/csv;charset=utf-8;' });
+        
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.href = url;
+        link.download = `JAR_Telemetry_${Date.now()}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        
+        setTimeout(() => {
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }, 100);
     }
 }
