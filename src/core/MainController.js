@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import { POOL } from './Pool.js';
 import { AudioEngine } from './AudioEngine.js';
+import { DataLogger } from './DataLogger.js';
+import { FXManager } from '../render/FXManager.js';
 import { ArmBuilder } from '../kinematics/ArmBuilder.js';
 import { CCDIKSolver } from '../kinematics/CCDIKSolver.js';
 import { InputMapper } from '../controls/InputMapper.js';
@@ -16,10 +17,14 @@ export class MainController {
         this.clock = new THREE.Clock();
         this.isRunning = false;
 
-        this.targetPos = new THREE.Vector3(-0.5, 0.45, 0.5);
+        this.targetPos = new THREE.Vector3(-0.48, 0.45, 0.48);
         this.audio = new AudioEngine();
-        this.inputMapper = new InputMapper();
+        this.inputMapper = new InputMapper(mode);
         this.hud = new HUDManager();
+        this.fx = new FXManager(this.sceneMgr.scene, this.sceneMgr.camera);
+        
+        // 🌟 科研級數據記錄器 (科研模式自動開啟 60Hz 採樣)
+        this.logger = new DataLogger(mode === 'research', 60);
 
         this.armData = null;
         this.mission = null;
@@ -27,7 +32,6 @@ export class MainController {
         this.joystick = null;
         this.clawAnimProgress = 1.0;
 
-        // 🌟 Zero-GC 遙測數據緩存結構 (避免每幀 new Array 引發 GC 掉幀)
         this._jointAngles = new Float32Array(4);
         this._prevJointAngles = new Float32Array(4);
         this._jointTorques = new Float32Array(4);
@@ -37,8 +41,6 @@ export class MainController {
         this.controls = new OrbitControls(this.sceneMgr.camera, this.sceneMgr.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.08;
-        
-        // 焦點鎖定於工作台中心底座
         this.controls.target.set(0, 0.25, 0);
         this.controls.minDistance = 1.4;
         this.controls.maxDistance = 4.2;
@@ -54,7 +56,8 @@ export class MainController {
             this.audio,
             this.sceneMgr.scene,
             this.mode,
-            this.hud
+            this.hud,
+            this.fx
         );
 
         this.joystick = JoystickManager.init(
@@ -68,6 +71,18 @@ export class MainController {
             },
             () => this.mission.toggleGrip()
         );
+
+        // 綁定科研模式 CSV 導出按鈕
+        const expBtn = document.getElementById('res-export-btn');
+        if (expBtn) {
+            expBtn.onclick = () => this.logger.exportCSV();
+        }
+
+        // 科研面板可見性
+        const resPanel = document.getElementById('research-data-panel');
+        if (resPanel) {
+            resPanel.style.display = (this.mode === 'research') ? 'block' : 'none';
+        }
 
         this.isRunning = true;
         this.animate();
@@ -88,57 +103,75 @@ export class MainController {
         this.inputMapper.update(this.targetPos, dt, this.sceneMgr.camera);
         this.mission.update(dt, this.targetPos, intensity);
 
-        // 🌟 修正 1：標準簽名傳遞 dt，平滑解算 CCD-IK
         CCDIKSolver.solve(this.armData.ikBones, this.armData.endEffector, this.targetPos, dt);
 
-        // 伸縮連桿動態適配
         if (this.armData.extensionRod && this.armData.joint2) {
             const currentDist = this.targetPos.length();
-            const extendRatio = Math.max(0.0, Math.min(0.45, (currentDist - 1.0) * 0.4));
-            this.armData.extensionRod.position.y = 0.65 + extendRatio;
-            this.armData.joint2.position.y = 1.05 + extendRatio;
+            const extendRatio = Math.max(0.0, Math.min(0.35, (currentDist - 0.9) * 0.35));
+            this.armData.extensionRod.position.y = 0.30 + extendRatio;
+            this.armData.joint2.position.y = 0.55 + extendRatio;
         }
 
-        // 末端夾爪開合動畫
+        // 夾爪動畫 (科研模式為 0 延遲瞬發，遊戲模式為平滑過渡)
         const targetOpen = this.mission.clawOpen ? 1.0 : 0.0;
-        this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * (14.0 * dt);
-        const offset = this.clawAnimProgress * 0.08;
-        this.armData.clawLeft.position.x = -offset;
-        this.armData.clawRight.position.x = offset;
+        const animSpeed = (this.mode === 'research') ? 999.0 : 16.0;
+        this.clawAnimProgress += (targetOpen - this.clawAnimProgress) * Math.min(1.0, animSpeed * dt);
+        const offset = this.clawAnimProgress * 0.06;
+        this.armData.clawLeft.position.x = -0.065 - offset;
+        this.armData.clawRight.position.x = 0.065 + offset;
 
-        // 狀態指示燈
         if (this.armData.statusLed) {
             this.armData.statusLed.material.color.setHex(this.mission.isSecured ? 0x00ff66 : 0xff7700);
         }
 
-        // 🌟 修正 2：真實提取 6-DoF 關節物理角速度與力矩遙測
+        // 提取關節物理角速度
         if (this.armData.ikBones && this.armData.ikBones.length > 0) {
             const len = Math.min(this.armData.ikBones.length, 4);
             const invDt = dt > 0.0001 ? 1.0 / dt : 60;
-            
             for (let i = 0; i < len; i++) {
                 const b = this.armData.ikBones[i];
                 const currentAngle = (b.axis === 'Y') ? b.obj.rotation.y : b.obj.rotation.x;
                 this._jointAngles[i] = currentAngle;
-                
-                // 動態差分角速度 -> 近似力矩負載估算
                 const angularSpeed = Math.abs(currentAngle - this._prevJointAngles[i]) * invDt;
                 this._jointTorques[i] = angularSpeed * (0.8 + i * 0.3);
                 this._prevJointAngles[i] = currentAngle;
             }
         }
 
-        this.audio.setMotorPitch(intensity);
+        // 🌟 科研數據流記錄與即時面板更新
+        if (this.mode === 'research') {
+            const vel = Math.hypot(this.inputMapper._currentVel.x, this.inputMapper._currentVel.y, this.inputMapper._currentVel.z);
+            this.logger.logFrame({
+                posX: this.targetPos.x,
+                posY: this.targetPos.y,
+                posZ: this.targetPos.z,
+                joint0: this._jointAngles[0],
+                joint1: this._jointAngles[1],
+                joint2: this._jointAngles[2],
+                joint3: this._jointAngles[3],
+                vel: vel,
+                error: this.mission.getDistance(),
+                secured: this.mission.isSecured
+            });
 
-        // 傳遞真實遙測數據流至 HUD
-        this.hud.update(
-            this.targetPos,
-            this.armData,
-            this.mission,
-            intensity,
-            this._jointAngles,
-            this._jointTorques
-        );
+            // 更新科研 DOM 面板
+            const resPos = document.getElementById('res-pos');
+            const resJoints = document.getElementById('res-joints');
+            const resVel = document.getElementById('res-vel');
+            const resErr = document.getElementById('res-err');
+            if (resPos) resPos.innerText = `(${this.targetPos.x.toFixed(2)}, ${this.targetPos.y.toFixed(2)}, ${this.targetPos.z.toFixed(2)})`;
+            if (resJoints) resJoints.innerText = Array.from(this._jointAngles).map(a => (a*180/Math.PI).toFixed(1)).join('°, ');
+            if (resVel) resVel.innerText = vel.toFixed(2);
+            if (resErr) resErr.innerText = this.mission.getDistance().toFixed(3);
+        }
+
+        this.audio.setMotorPitch(intensity);
+        this.hud.update(this.targetPos, this.armData, this.mission, intensity, this._jointAngles, this._jointTorques);
+
+        // 🌟 遊戲模式更新粒子與微震，科研模式跳過
+        if (this.mode !== 'research' && this.fx) {
+            this.fx.update(dt);
+        }
 
         if (this.controls) this.controls.update();
         this.sceneMgr.render();
