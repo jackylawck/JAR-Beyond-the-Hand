@@ -1,46 +1,49 @@
-const CACHE_NAME = 'beyond-the-hand-v4';
+const CACHE_VERSION = 'jar-v2026.2';
 const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './manifest.json',
-  './css/style.css',
-  './src/main.js',
-  './src/core/Pool.js',
-  './src/core/ConfigManager.js',
-  './src/core/SceneManager.js',
-  './src/core/ErrorBoundary.js',
-  './src/core/MainController.js',
-  './src/core/AudioEngine.js',
-  './src/kinematics/ArmBuilder.js',
-  './src/kinematics/CCDIKSolver.js',
-  './src/controls/InputMapper.js',
-  './src/controls/JoystickManager.js',
-  './src/gameplay/MissionManager.js',
-  './src/render/HUDManager.js',
-  './src/render/ImpactFXManager.js',
-  'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js'
+    './',
+    './index.html',
+    './manifest.json',
+    './src/main.js',
+    './src/core/Pool.js',
+    './src/core/SceneManager.js',
+    './src/core/MainController.js',
+    './src/kinematics/CCDIKSolver.js',
+    './src/kinematics/ArmBuilder.js',
+    './src/controls/InputMapper.js',
+    './src/controls/JoystickManager.js',
+    './src/render/HUDManager.js',
+    './src/gameplay/MissionManager.js',
+    './src/config/i18n.js'
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS_TO_CACHE))
-  );
-  self.skipWaiting();
+self.addEventListener('install', (e) => {
+    e.waitUntil(
+        caches.open(CACHE_VERSION).then((cache) => {
+            return cache.addAll(ASSETS_TO_CACHE);
+        }).then(() => self.skipWaiting())
+    );
 });
 
-self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      );
-    })
-  );
-  self.clients.claim();
+self.addEventListener('activate', (e) => {
+    e.waitUntil(
+        caches.keys().then((keys) => {
+            return Promise.all(
+                keys.filter(key => key !== CACHE_VERSION).map(key => caches.delete(key))
+            );
+        }).then(() => self.clients.claim())
+    );
 });
 
-self.addEventListener('fetch', (event) => {
-  event.respondWith(
-    caches.match(event.request).then((response) => response || fetch(event.request))
-  );
+self.addEventListener('fetch', (e) => {
+    if (e.request.method !== 'GET') return;
+
+    e.respondWith(
+        fetch(e.request).then((networkRes) => {
+            if (networkRes && networkRes.status === 200 && networkRes.type === 'basic') {
+                const resClone = networkRes.clone();
+                caches.open(CACHE_VERSION).then((cache) => cache.put(e.request, resClone));
+            }
+            return networkRes;
+        }).catch(() => caches.match(e.request))
+    );
 });
