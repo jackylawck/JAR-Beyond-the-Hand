@@ -52,7 +52,7 @@
     <meta name="twitter:description" content="High-fidelity 3D WebGL robotic arm simulator with real-time CCD-IK and dynamic FFT telemetry.">
     <meta name="twitter:image" content="https://jackylawck.github.io/JAR-Beyond-the-Hand/jarBeyondtheHand512icon.png">
 
-    <!-- 🔍 Google 結構化資料 -->
+    <!-- 🔍 Google 結構化資料 (Schema.org JSON-LD) -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
@@ -60,19 +60,19 @@
       "name": "J.A.R. Beyond the Hand 3D",
       "alternateName": "J.A.R. 在手之上 3D - 聯合應用科學探索",
       "url": "https://jackylawck.github.io/JAR-Beyond-the-Hand/",
-      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator.",
+      "description": "An open-source, zero-asset WebGL 6-DoF kinematic robotic arm simulator featuring real-time CCD-IK, FFT vibration telemetry, and 3-tier career scenarios.",
       "applicationCategory": "EducationalApplication, SimulationApplication",
       "operatingSystem": "All"
     }
     </script>
 
-    <!-- 📲 PWA 與圖示連結 -->
+    <!-- 📲 完整跨平台 PWA 與 Favicon 集合 -->
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/png" sizes="192x192" href="jarBeyondtheHand192icon.png">
     <link rel="icon" type="image/png" sizes="512x512" href="jarBeyondtheHand512icon.png">
     <link rel="apple-touch-icon" href="jarBeyondtheHand192icon.png">
+    <meta name="msapplication-TileColor" content="#020810">
 
-    <!-- 🌟 Import Map 模組路徑映射 -->
     <script type="importmap">
     {
       "imports": {
@@ -109,7 +109,7 @@
             height: 100vh;
             overflow: hidden;
             background-color: #020810;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
             position: fixed;
         }
 
@@ -122,7 +122,52 @@
             z-index: 1;
         }
 
-        /* 頂部極簡全息即時數據長條 */
+        /* 🌟 1. 全息 Loading 載入螢幕 */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 90;
+            width: 100%;
+            height: 100%;
+            background: #020810;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease;
+        }
+
+        .loader-ring {
+            width: 48px;
+            height: 48px;
+            border: 2px solid rgba(0, 229, 255, 0.2);
+            border-top-color: #00e5ff;
+            border-radius: 50%;
+            animation: ringSpin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.35);
+        }
+
+        @keyframes ringSpin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loader-text {
+            color: #8899aa;
+            font-size: 12px;
+            margin-top: 16px;
+            letter-spacing: 1px;
+        }
+
+        .loader-sub {
+            color: #557788;
+            font-size: 10px;
+            margin-top: 4px;
+            font-family: monospace;
+        }
+
+        /* 🌟 2. 頂部全息動態數據列 */
         #top-telemetry-bar {
             position: absolute;
             top: calc(env(safe-area-inset-top, 10px) + 6px);
@@ -133,7 +178,7 @@
             background: var(--color-bg-dark);
             border: 1px solid var(--color-border);
             border-radius: 18px;
-            padding: 6px 10px;
+            padding: 6px 12px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -141,9 +186,38 @@
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            animation: barPulse 3.5s ease-in-out infinite alternate;
+        }
+
+        @keyframes barPulse {
+            0% { border-color: rgba(0, 229, 255, 0.35); box-shadow: 0 0 10px rgba(0, 229, 255, 0.15); }
+            100% { border-color: rgba(0, 229, 255, 0.8); box-shadow: 0 0 22px rgba(0, 229, 255, 0.35); }
+        }
+
+        #top-telemetry-bar::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; width: 200%; height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 4px,
+                rgba(0, 229, 255, 0.03) 4px,
+                rgba(0, 229, 255, 0.03) 8px
+            );
+            pointer-events: none;
+            animation: scanlineH 10s linear infinite;
+        }
+
+        @keyframes scanlineH {
+            0% { transform: translateX(-50%); }
+            100% { transform: translateX(0%); }
         }
 
         .bar-left {
+            position: relative;
+            z-index: 1;
             display: flex;
             gap: 6px;
             font-size: 11px;
@@ -153,10 +227,27 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
-        .bar-left span b { color: var(--color-primary); }
-        .bar-left .err-tag { color: #ff5555; font-weight: bold; }
+        
+        .bar-left span b {
+            color: var(--color-primary);
+            animation: dataFlicker 5s ease-in-out infinite;
+        }
+        .bar-left .err-tag {
+            color: #ff5555;
+            font-weight: bold;
+        }
+
+        @keyframes dataFlicker {
+            0%, 100% { opacity: 1; }
+            92% { opacity: 1; }
+            93% { opacity: 0.65; }
+            95% { opacity: 1; }
+            97% { opacity: 0.8; }
+        }
 
         .bar-right {
+            position: relative;
+            z-index: 1;
             display: flex;
             gap: 5px;
             align-items: center;
@@ -169,42 +260,70 @@
             color: #fff;
             font-size: 10px;
             font-weight: bold;
-            padding: 3px 6px;
+            padding: 3px 7px;
             border-radius: 10px;
             cursor: pointer;
             white-space: nowrap;
-            transition: 0.2s;
+            transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        .mini-btn:active { transform: scale(0.95); }
+        .mini-btn:active {
+            transform: scale(0.92);
+            background: rgba(0, 229, 255, 0.35);
+        }
 
-        /* 單行緊湊任務提示 */
+        /* 🌟 3. 單行任務指示 */
         #compact-mission-tip {
             position: absolute;
             top: calc(env(safe-area-inset-top, 10px) + 46px);
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(4, 12, 24, 0.75);
-            border: 1px solid rgba(0, 229, 255, 0.25);
+            background: rgba(4, 12, 24, 0.82);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-left: 3px solid #00e5ff;
             color: #00e5ff;
             font-size: 11px;
             padding: 3px 12px;
             border-radius: 12px;
             z-index: 25;
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             pointer-events: none;
             text-align: center;
             white-space: nowrap;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
         }
 
-        /* AI 提示框 */
+        /* 🌟 4. PC 鍵盤提示指南 */
+        #keyboard-hint {
+            position: absolute;
+            top: calc(env(safe-area-inset-top, 10px) + 68px);
+            left: 50%;
+            transform: translateX(-50%);
+            color: #557788;
+            font-size: 9px;
+            z-index: 15;
+            pointer-events: none;
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 229, 255, 0.15);
+            padding: 2px 10px;
+            border-radius: 8px;
+            backdrop-filter: blur(4px);
+            -webkit-backdrop-filter: blur(4px);
+            opacity: 0.65;
+            letter-spacing: 0.5px;
+            white-space: nowrap;
+        }
+
+        /* 🌟 5. AI 對話框 (附帶平滑位移與銷毀動畫) */
         #jar-dialogue {
             position: absolute;
-            bottom: clamp(120px, 16vh, 140px);
+            bottom: clamp(125px, 17vh, 150px);
             left: 50%;
             transform: translateX(-50%);
             background: var(--color-bg-dark);
             border: 1px solid var(--color-primary);
+            border-left: 4px solid var(--color-primary);
             border-radius: 8px;
             padding: 8px 14px;
             width: 86%;
@@ -212,40 +331,55 @@
             z-index: 20;
             backdrop-filter: blur(16px);
             -webkit-backdrop-filter: blur(16px);
-            transition: opacity 0.8s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            transition: opacity 0.8s ease, transform 0.4s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
         }
 
         #jar-title { display: flex; justify-content: space-between; font-size: 11px; font-weight: bold; color: var(--color-primary); margin-bottom: 2px; }
         #jar-text { color: #fff; font-size: 12px; line-height: 1.3; }
 
-        /* 雙搖桿與 GRIP 按鈕 */
+        /* 🌟 6. 控制層與觸控按鈕 */
         .controls-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 20; pointer-events: none; }
 
-        #joy-left {
+        .joystick-zone {
             position: absolute;
-            bottom: max(20px, env(safe-area-inset-bottom, 20px));
-            left: max(20px, env(safe-area-inset-left, 20px));
             width: clamp(80px, 11vw, 110px);
             height: clamp(80px, 11vw, 110px);
             background: rgba(0, 229, 255, 0.05);
-            border: 2px dashed rgba(0, 229, 255, 0.3);
+            border: 2px dashed rgba(0, 229, 255, 0.35);
             border-radius: 50%;
             pointer-events: auto;
             touch-action: none;
         }
 
+        #joy-left {
+            bottom: max(20px, env(safe-area-inset-bottom, 20px));
+            left: max(20px, env(safe-area-inset-left, 20px));
+        }
+
         #joy-right {
-            position: absolute;
             bottom: max(20px, env(safe-area-inset-bottom, 20px));
             right: clamp(95px, 13vw, 140px);
-            width: clamp(80px, 11vw, 110px);
-            height: clamp(80px, 11vw, 110px);
-            background: rgba(0, 229, 255, 0.05);
-            border: 2px dashed rgba(0, 229, 255, 0.3);
+        }
+
+        .joystick-zone::after {
+            content: "";
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 0; height: 0;
             border-radius: 50%;
-            pointer-events: auto;
-            touch-action: none;
+            background: rgba(0, 229, 255, 0.3);
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            opacity: 0;
+            transition: width 0.35s ease-out, height 0.35s ease-out, opacity 0.35s ease-out;
+        }
+
+        .joystick-zone.active::after {
+            width: 130%;
+            height: 130%;
+            opacity: 0;
+            transition: width 0.15s ease-out, height 0.15s ease-out, opacity 0.15s ease-out;
         }
 
         .joy-knob {
@@ -257,7 +391,7 @@
             height: clamp(34px, 4.2vw, 44px);
             background: radial-gradient(circle, #00e5ff 0%, #006688 100%);
             border-radius: 50%;
-            box-shadow: 0 0 15px rgba(0, 229, 255, 0.5);
+            box-shadow: 0 0 16px rgba(0, 229, 255, 0.6);
             pointer-events: none;
         }
 
@@ -284,6 +418,35 @@
 
         #btn-grip:active { transform: scale(0.9); }
 
+        /* 🌟 7. 全局 Error Boundary 面板 */
+        #error-boundary {
+            display: none;
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 1000;
+            background: rgba(20, 6, 8, 0.96);
+            border: 2px solid #ff3344;
+            border-radius: 12px;
+            padding: 24px 30px;
+            text-align: center;
+            max-width: 340px;
+            width: 88%;
+            box-shadow: 0 10px 40px rgba(255, 0, 68, 0.35);
+        }
+        #error-boundary h2 { color: #ff3344; font-size: 16px; margin: 8px 0; }
+        #error-boundary p { color: #8899aa; font-size: 12px; line-height: 1.4; }
+        #error-boundary button {
+            margin-top: 16px;
+            background: #ff3344;
+            border: none;
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
         /* 模式切換彈窗 */
         #mode-selector {
             display: none;
@@ -299,7 +462,7 @@
             align-items: center;
         }
 
-        #mode-selector h2 { color: #00e5ff; font-size: 20px; margin-bottom: 4px; }
+        #mode-selector h2 { color: #00e5ff; font-size: 20px; margin-bottom: 4px; text-shadow: 0 0 10px rgba(0,229,255,0.5); }
         #mode-selector p { color: #8899aa; font-size: 12px; margin-bottom: 18px; }
         .mode-cards-wrap { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
         .mode-card {
@@ -310,9 +473,9 @@
             width: 130px;
             cursor: pointer;
             text-align: center;
-            transition: 0.2s;
+            transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
         }
-        .mode-card:hover { border-color: #00e5ff; background: rgba(0, 229, 255, 0.12); }
+        .mode-card:hover { border-color: #00e5ff; background: rgba(0, 229, 255, 0.15); transform: translateY(-3px); }
         .mode-card .icon { font-size: 28px; }
         .mode-card h3 { color: #fff; font-size: 13px; margin: 6px 0 2px; }
         .mode-card p { color: #8899aa; font-size: 10px; }
@@ -320,40 +483,57 @@
 
         @media (orientation: landscape) {
             #compact-mission-tip { top: calc(env(safe-area-inset-top, 10px) + 38px); font-size: 10px; }
+            #keyboard-hint { display: none; }
             #jar-dialogue { bottom: auto; top: max(10px, env(safe-area-inset-top, 10px)); left: 50%; width: auto; min-width: 260px; max-width: 380px; padding: 6px 12px; }
             #jar-text { font-size: 11px; }
         }
     </style>
 </head>
 <body>
-    <div id="mode-selector">
+    <!-- 🌟 1. 全息 Loading 載入螢幕 -->
+    <div id="loading-screen" role="progressbar" aria-label="系統加載中">
+        <div class="loader-ring"></div>
+        <p class="loader-text">⏳ 初始化機械臂系統...</p>
+        <p id="loading-progress" class="loader-sub">載入 6-DoF 運動學模組中</p>
+    </div>
+
+    <!-- 🌟 2. 錯誤邊界 UI -->
+    <div id="error-boundary" role="alert">
+        <div style="font-size:32px;">🚨</div>
+        <h2>模擬器初始化異常</h2>
+        <p id="error-message">偵測到瀏覽器 WebGL 環境或模組加載受阻，請重新整理。</p>
+        <button onclick="location.reload()">🔄 重新整理</button>
+    </div>
+
+    <!-- 模式選擇器 Modal -->
+    <div id="mode-selector" role="dialog" aria-labelledby="modal-title" aria-modal="true">
         <h2 id="modal-title">⚡ 切換任務模式</h2>
         <p id="modal-desc">請選擇即將載入的自動化領域</p>
         <div class="mode-cards-wrap">
-            <div class="mode-card" data-mode="kid">
+            <button class="mode-card" data-mode="kid" aria-label="切換至兒童模式：農業精準採摘">
                 <div class="icon">🍓</div>
                 <h3 id="mode-opt-kid-title">兒童模式</h3>
                 <p id="mode-opt-kid-desc">農業精準採摘</p>
-            </div>
-            <div class="mode-card" data-mode="advanced">
+            </button>
+            <button class="mode-card" data-mode="advanced" aria-label="切換至進階模式：3C精密組裝">
                 <div class="icon">📱</div>
                 <h3 id="mode-opt-adv-title">進階模式</h3>
                 <p id="mode-opt-adv-desc">3C 精密組裝</p>
-            </div>
-            <div class="mode-card" data-mode="research">
+            </button>
+            <button class="mode-card" data-mode="research" aria-label="切換至科研模式：實驗室自動化">
                 <div class="icon">🧪</div>
                 <h3 id="mode-opt-res-title">科研模式</h3>
                 <p id="mode-opt-res-desc">實驗室自動化</p>
-            </div>
+            </button>
         </div>
-        <button id="btn-close-modal">關閉</button>
+        <button id="btn-close-modal" aria-label="關閉模式選擇視窗">關閉</button>
     </div>
 
     <div id="canvas-container"></div>
     
-    <!-- 頂部單行數據列 -->
-    <div id="top-telemetry-bar">
-        <div class="bar-left">
+    <!-- 頂部全息動態數據列 -->
+    <header id="top-telemetry-bar" role="toolbar" aria-label="即時遙測數據工具列">
+        <div class="bar-left" aria-live="polite">
             <span>X:<b id="top-val-x">0.00</b></span>
             <span>Y:<b id="top-val-y">0.00</b></span>
             <span>Z:<b id="top-val-z">0.00</b></span>
@@ -361,14 +541,17 @@
             <span>Err:<b id="top-val-err" class="err-tag">0.00</b></span>
         </div>
         <div class="bar-right">
-            <button id="btn-switch-mode" class="mini-btn">🔀 模式</button>
-            <button id="lang-btn" class="mini-btn">🌐 EN</button>
+            <button id="btn-switch-mode" class="mini-btn" aria-label="切換任務模式" aria-haspopup="dialog">🔀 模式</button>
+            <button id="lang-btn" class="mini-btn" aria-label="切換語言">🌐 EN</button>
         </div>
-    </div>
+    </header>
 
-    <div id="compact-mission-tip">🍓 初熟草莓 ｜ 移動夾爪至上方按下 GRIP</div>
+    <div id="compact-mission-tip" aria-live="polite">🍓 初熟草莓 ｜ 移動夾爪至上方按下 GRIP</div>
 
-    <div id="jar-dialogue">
+    <!-- 🌟 PC 鍵盤提示指南 -->
+    <div id="keyboard-hint" aria-hidden="true">⌨️ WASD 移動 · Q/E 升降 · SPACE GRIP</div>
+
+    <div id="jar-dialogue" role="region" aria-live="polite">
         <div id="jar-title">
             <span id="jar-title-text">J.A.R. 系統助理</span>
             <span id="jar-status-tag" style="color:#00ff66;">● 在線</span>
@@ -376,18 +559,53 @@
         <div id="jar-text">你好！我已經準備好幫你摘士多啤梨啦～ 🍓</div>
     </div>
 
-    <div class="controls-overlay">
-        <div id="joy-left" class="joystick-zone"><div id="knob-left" class="joy-knob"></div></div>
-        <div id="joy-right" class="joystick-zone"><div id="knob-right" class="joy-knob"></div></div>
-        <div id="btn-grip" class="action-btn">GRIP</div>
-    </div>
+    <!-- 🌟 控制層與 ARIA 標籤 -->
+    <main class="controls-overlay">
+        <div id="joy-left" class="joystick-zone" role="slider" aria-label="水平移動搖桿，控制機械臂前後左右" tabindex="0">
+            <div id="knob-left" class="joy-knob"></div>
+        </div>
+        <div id="joy-right" class="joystick-zone" role="slider" aria-label="垂直移動搖桿，控制機械臂升降" tabindex="0">
+            <div id="knob-right" class="joy-knob"></div>
+        </div>
+        <button id="btn-grip" class="action-btn" aria-label="抓取按鈕，按下可夾取目標物件">GRIP</button>
+    </main>
 
-    <script type="module" src="src/main.js"></script>
     <script>
+        // 1. 全局 Error 捕捉
+        window.addEventListener('error', (e) => {
+            const boundary = document.getElementById('error-boundary');
+            const msg = document.getElementById('error-message');
+            if (boundary && msg) {
+                boundary.style.display = 'block';
+                msg.innerText = e.message || '腳本執行異常';
+            }
+        });
+
+        // 2. Loading 狀態平滑銷毀
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                const loader = document.getElementById('loading-screen');
+                if (loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => loader.remove(), 800);
+                }
+            }, 800);
+        });
+
+        // 3. AI 提示框平滑淡出 + 徹底消除阻擋 (Ghost Block Defense)
         setTimeout(() => {
             const jar = document.getElementById('jar-dialogue');
-            if (jar) jar.style.opacity = '0';
+            if (jar) {
+                jar.style.opacity = '0';
+                jar.style.transform = 'translateX(-50%) translateY(10px)';
+                setTimeout(() => {
+                    jar.style.display = 'none';
+                    jar.style.pointerEvents = 'none';
+                }, 800);
+            }
         }, 5000);
     </script>
+
+    <script type="module" src="src/main.js?v=2026.3A.FINAL"></script>
 </body>
 </html>
