@@ -19,7 +19,7 @@ export class MissionManager {
     }
 
     _initScenario() {
-        const t = I18N[this.lang];
+        const t = I18N[this.lang] || I18N.zh;
         const jarBox = document.getElementById('jar-dialogue');
         const jarText = document.getElementById('jar-text');
 
@@ -34,7 +34,7 @@ export class MissionManager {
 
     setLanguage(lang) {
         this.lang = lang;
-        const t = I18N[lang];
+        const t = I18N[lang] || I18N.zh;
         const jarText = document.getElementById('jar-text');
         if (jarText) {
             let welcome = t.jarKidWelcome;
